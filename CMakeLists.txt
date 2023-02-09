@@ -1,12 +1,9 @@
-cmake_minimum_required(VERSION 3.16.3)
+cmake_minimum_required(VERSION 3.22)
 
-# Set the project name and version
-project(HelloWorld VERSION 1.0)
+project(Compiler VERSION 1.0)
 
-# Set the C standard
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED True)
 
-# Adds the compiler options
-add_compile_options(-Wall -Wextra -Wmissing-prototypes -pedantic -DNDEBUG)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 add_subdirectory(src)
