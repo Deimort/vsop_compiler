@@ -1,0 +1,20 @@
+{
+	"makefile.makefilePath": "src/Makefile",
+	"makefile.makeDirectory": "src",
+	"makefile.launchConfigurations": [
+		{
+			"cwd": "/workspaces/cpl_project/src",
+			"binaryPath": "/workspaces/cpl_project/src/calc",
+			"binaryArgs": [
+				"-l",
+				"examples/my-class.txt"
+			]
+		},
+		{
+			"cwd": "/workspaces/cpl_project/src",
+			"binaryPath": "/workspaces/cpl_project/src/calc",
+			"binaryArgs": []
+		}
+	],
+	"makefile.buildBeforeLaunch": true
+}
