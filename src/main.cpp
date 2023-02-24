@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "simpleLexer.hpp"
+#include "driver.hpp"
 
 using namespace std;
 

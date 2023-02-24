@@ -8,5 +8,3 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 find_package(FLEX REQUIRED)
 
 add_subdirectory(src)
-
-target_link_libraries(${PROJECT_NAME} ${FLEX_LIBRARIES})
