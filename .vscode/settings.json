@@ -16,5 +16,12 @@
 			"binaryArgs": []
 		}
 	],
-	"makefile.buildBeforeLaunch": true
+	"makefile.buildBeforeLaunch": true,
+	"files.associations": {
+		"*.jsx": "javascriptreact",
+		"*.scm": "racket",
+		"*.asm": "bsim",
+		"*.lex": "lex",
+		"string": "cpp"
+	}
 }
