@@ -3,6 +3,7 @@
     /* Includes */
     #include <string>
     #include <iostream>
+    #include <iomanip>
     #include <sstream>
     #include "tokens.hpp"
 %}
@@ -31,7 +32,7 @@ cr                  \r
 integer_literal     {digit}+|"0x"{hex_digit}+
 type_identifier     {uppercase_letter}({letter}|{digit}|"_")*
 object_identifier   {lowercase_letter}({letter}|{digit}|"_")*
-escape_sequence     [btnr]|\\|"x"{hex_digit}{2}|{lf}(" "|{tab})*
+escape_sequence     [btnr]|\\|"x"{hex_digit}{2}|"n"(" "|{tab})*
 escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
 string_literal      \"({regular_char}|{escaped_char})*\"
@@ -84,25 +85,58 @@ string_literal      \"({regular_char}|{escaped_char})*\"
     /* identifiers */
 {type_identifier}   { return makeToken(Token::TYPE_IDENTIFIER); }
 {object_identifier} { return makeToken(Token::OBJECT_IDENTIFIER); }
-    
+{whitespace}        
 
-\"                  { BEGIN(string); }
-<string>{regular_char}   { literalStringStream << yytext; }
-<string>{escaped_char}   { literalStringStream << yytext; }
-<string>\\{lf}          { BEGIN(backslash); }
-<string>\"             { 
-                            std::cout << literalStringStream.str();
-                            BEGIN(INITIAL);
-                            literalStringStream.str("");
-                            return makeToken(Token::STRING_LITERAL);
-                        }
+\"                  { 
+    BEGIN(string); 
+    literalStringStream << "\"";
+    yymore();
+    literalStringStream.str("");
+    }
 
-<backslash>{regular_char}       { 
-                                    literalStringStream << yytext; 
-                                    BEGIN(string); 
-                                }
-<backslash>{whitespace}       
- 
+<string>{regular_char}   { literalStringStream << yytext;}
+<string>"\\"\n               { BEGIN(backslash); }
+<string>{escaped_char}             {
+        switch (yytext[1])
+        {
+            case 'b':
+                literalStringStream << "\\x08";
+                break;
+            case 't':
+                literalStringStream << "\\x09";
+                break;
+            case 'n':
+                literalStringStream << "\\x0a";
+                break;
+            case 'r':
+                literalStringStream << "\\x0d";
+                break;
+            case 'x':
+                literalStringStream << "\\x" << yytext[2] << yytext[3];
+                break;
+            default:
+                literalStringStream << yytext;
+                break;
+        }
+}
+<string>\"              {
+        literalStringStream << "\"\0";
+        yytext -= literalStringStream.str().length();
+        
+        yyleng = literalStringStream.str().length();
+        
+        for (int i = 0; i < literalStringStream.str().length(); i++)
+        {
+            yytext[i] = literalStringStream.str()[i];
+        }
+        BEGIN(INITIAL);
+        return makeToken(Token::STRING_LITERAL); 
+    }
+
+<backslash>{letter}         {  yymore(); BEGIN(string); }
+<backslash>{whitespace}
+
+    /* comments */
 %%
 
 int makeToken(Token token)
