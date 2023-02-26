@@ -16,6 +16,7 @@
     int makeToken(Token token);
     
     std::stringstream literalStringStream;
+    int column = 1;
 %}
 
 lowercase_letter    [a-z]
@@ -35,7 +36,7 @@ object_identifier   {lowercase_letter}({letter}|{digit}|"_")*
 escape_sequence     [btnr]|\\|"x"{hex_digit}{2}|"n"(" "|{tab})*
 escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
-string_literal      \"({regular_char}|{escaped_char})*\"
+/* string_literal      \"({regular_char}|{escaped_char})*\" */
 
 %x string
 %x backslash
@@ -85,7 +86,9 @@ string_literal      \"({regular_char}|{escaped_char})*\"
     /* identifiers */
 {type_identifier}   { return makeToken(Token::TYPE_IDENTIFIER); }
 {object_identifier} { return makeToken(Token::OBJECT_IDENTIFIER); }
-{whitespace}        
+{whitespace}
+.+       { column += yyleng; }
+{lf}                { column = 1; }
 
 \"                  { 
     BEGIN(string); 
@@ -94,7 +97,7 @@ string_literal      \"({regular_char}|{escaped_char})*\"
     literalStringStream.str("");
     }
 
-<string>{regular_char}   { literalStringStream << yytext;}
+<string>{regular_char}*   { literalStringStream << yytext;}
 <string>"\\"\n               { BEGIN(backslash); }
 <string>{escaped_char}             {
         switch (yytext[1])
@@ -133,8 +136,21 @@ string_literal      \"({regular_char}|{escaped_char})*\"
         return makeToken(Token::STRING_LITERAL); 
     }
 
-<backslash>{letter}         {  yymore(); BEGIN(string); }
-<backslash>{whitespace}
+<string>{lf}           { 
+        yytext = "Forbidden raw line feed\0";
+        yyleng = 25;
+        return makeToken(Token::ERROR);
+    }
+
+<string><<EOF>>        { 
+        yytext = "Unterminated string literal\0";
+        yyleng = 29;
+        BEGIN(INITIAL);
+        return makeToken(Token::ERROR);
+    }
+
+<backslash>{regular_char}         {  yymore(); BEGIN(string); }
+<backslash>{whitespace}*
 
     /* comments */
 %%

@@ -3,7 +3,8 @@
 #include <string>
 #include <map>
 
-enum class Token : int {
+enum class Token : int
+{
     // operators
     LBRACE = '{',
     RBRACE = '}',
@@ -49,10 +50,11 @@ enum class Token : int {
     // identifiers
     TYPE_IDENTIFIER,
     OBJECT_IDENTIFIER,
+    ERROR
 };
 
 // create map from ascii token to string
-static const std::map<Token, std::string> tokensMap {
+static const std::map<Token, std::string> tokensMap{
     // operators
     {Token::LBRACE, "lbrace"},
     {Token::RBRACE, "rbrace"},
@@ -98,4 +100,4 @@ static const std::map<Token, std::string> tokensMap {
     // identifiers
     {Token::TYPE_IDENTIFIER, "type-identifier"},
     {Token::OBJECT_IDENTIFIER, "object-identifier"},
-};
+    {Token::ERROR, "lexical-error"}};
