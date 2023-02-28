@@ -157,11 +157,11 @@ regular_char        [^"\n\\]
         }
 }
 <string>\"              {
-        literalStringStream << "\"\0";
+        literalStringStream << "\"";
         BEGIN(INITIAL);
         return makeToken(Token::STRING_LITERAL, literalStringStream.str(), scLine, scColumn); 
     }
-<string>"\\"[^btnrx\\]({letter}|{digit})*           {
+<string>\[^btnrx\\]({letter}|{digit})*           {
         return makeError("Invalid escape sequence");
     }
 <string>{lf}           {
@@ -174,8 +174,8 @@ regular_char        [^"\n\\]
         return makeError("Unterminated string literal", scLine, scColumn);
     }
 
-<backslash>{regular_char}         {  BEGIN(string); }
-<backslash>(" "|{tab})*           {  countColumn(); yytext += yyleng; }
+<backslash>{regular_char}         {  countColumn(); BEGIN(string); }
+<backslash>(" "|{tab})*           {  countColumn(); }
 
 .                   { return makeError("Invalid character"); }
 
