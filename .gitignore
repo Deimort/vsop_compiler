@@ -55,4 +55,5 @@ main
 build/
 *.swp
 
-vsopcompiler
+vsopcompiler.tar.xz
+vsopcompiler/*.o
