@@ -50,8 +50,9 @@ escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
 
 %x string
-%x backslash
+%x string_line_feed
 %x comment
+%x backslash
 %%
 
 
@@ -147,53 +148,39 @@ regular_char        [^"\n\\]
     }
 
 <string>{regular_char}*   { literalStringStream << yytext; countColumn(); }
-<string>"\\"\n {
-    resetColumn();
-    BEGIN(backslash); 
+
+<string>\\                          { BEGIN(backslash); yymore(); }
+<backslash>b                        { literalStringStream << "\\x08"; BEGIN(string); countColumn(); }
+<backslash>t                        { literalStringStream << "\\x09"; BEGIN(string); countColumn(); }
+<backslash>n                        { literalStringStream << "\\x0a"; BEGIN(string); countColumn(); }
+<backslash>r                        { literalStringStream << "\\x0d"; BEGIN(string); countColumn(); }
+<backslash>x{hex_digit}{2}          { literalStringStream << yytext; BEGIN(string); countColumn(); }
+<backslash>\"                       { literalStringStream << "\\x22"; BEGIN(string); countColumn(); }
+<backslash>\\                       { literalStringStream << "\\x5c"; BEGIN(string); countColumn(); }
+<backslash>.                        { 
+        literalStringStream << yytext; 
+        BEGIN(string);
+        return makeError("lexical error: invalid escape sequence");
+        countColumn();
+    }
+<backslash>\n                       { 
+        resetColumn();
+        BEGIN(string_line_feed); 
+    }
+<backslash><<EOF>>                  { 
+        BEGIN(INITIAL);
+        return makeError("lexical error: Unterminated string literal", scLine, scColumn);
     }
 
-<string>{escaped_char}             {
-        switch (yytext[1])
-        {
-            case 'b':
-                literalStringStream << "\\x08";
-                break;
-            case 't':
-                literalStringStream << "\\x09";
-                break;
-            case 'n':
-                literalStringStream << "\\x0a";
-                break;
-            case 'r':
-                literalStringStream << "\\x0d";
-                break;
-            case 'x':
-                literalStringStream << "\\x" << yytext[2] << yytext[3];
-                break;
-            case '"':
-                literalStringStream << "\\x22";
-                break;
-            case '\\':
-                literalStringStream << "\\x5c";
-                break;
-            default:
-                literalStringStream << yytext;
-                break;
-        }
-        countColumn();
-}
 <string>\"              {
         literalStringStream << "\"";
         BEGIN(INITIAL);
         return makeToken(Token::STRING_LITERAL, literalStringStream.str(), scLine, scColumn); 
     }
-<string>\\[^btnr\\"\n]({letter}|{digit})*           {
+<string>{lf}            {
         BEGIN(INITIAL);
-        return makeError("lexical error: Invalid escape sequence");
-    }
-<string>{lf}|\\\"            {
-        BEGIN(INITIAL);
-        int error = makeError("lexical error: character '\n' is illegal in this context.");
+        yyless(0);
+        int error = makeError("lexical error: character '\\n' is illegal in this context.");
         resetColumn();
         return error;
     }
@@ -203,13 +190,13 @@ regular_char        [^"\n\\]
         return makeError("lexical error: Unterminated string literal", scLine, scColumn);
     }
 
-<backslash>[^" "|\t]         { 
+<string_line_feed>[^" "|\t]         { 
         literalStringStream << yytext; 
         countColumn();
         BEGIN(string); 
     }
     
-<backslash>(" "|{tab})*           { countColumn(); }
+<string_line_feed>(" "|{tab})*           { countColumn(); }
 
 .                   { return makeError("lexical error: Invalid character"); }
 
