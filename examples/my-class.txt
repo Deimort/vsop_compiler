@@ -1,5 +1,13 @@
 class MyClass {
     s : string <- "One\n\x1b[33;mTwo and \
     three\r\n"
+    "Here is a \"nested string\".\n"
     i : int32 <- 0x1b
+    (* One line multi-line comment *)
+    "A string escape sequence is introduced by a `\\`.\x0a"
+    "Here i\
+    t is, the broken\n\ 
+    line.\n"
+    "Another one,\n\
+    without leading space.\n"
 }

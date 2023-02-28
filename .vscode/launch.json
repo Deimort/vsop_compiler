@@ -36,6 +36,7 @@
             // Resolved by CMake Tools:
             "program": "${command:cmake.launchTargetPath}",
             "args": [
+                "-l",
                 "${input:filePath}"
             ],
             "stopAtEntry": false,
