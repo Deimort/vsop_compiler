@@ -57,3 +57,5 @@ build/
 
 vsopcompiler.tar.xz
 vsopcompiler/*.o
+vsopcompiler/vsopc
+lexer.cpp
