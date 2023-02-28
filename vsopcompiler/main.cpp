@@ -25,15 +25,6 @@ int main(int argc, char **argv)
     }
 
     Scanner lexer(&inputFile, argv[2]);
-    auto tokens = lexer.scan();
 
-    if(lexer.hasErrorOccured()) {
-        return 1;
-    }
-
-    for (auto token : tokens) {
-        std::cout << token.to_string() << std::endl;
-    }
-
-    return 0;
+    return lexer.scan();
 }

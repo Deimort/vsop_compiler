@@ -5,6 +5,7 @@
     #include <iostream>
     #include <iomanip>
     #include <sstream>
+    #include <stack>
     #include "scanner.hpp"
     #include "tokens.hpp"
 %}
@@ -19,6 +20,12 @@
     std::stringstream literalStringStream;
     int nestedComments = 0;
     int scLine, scColumn;
+    typedef struct {
+        int line;
+        int column;
+    } CommentPos;
+
+    stack<CommentPos> commentStack;
 %}
 
 lowercase_letter    [a-z]
@@ -33,12 +40,14 @@ lf                  \n
 ff                  \f
 cr                  \r
 integer_literal     {digit}+|"0x"{hex_digit}+
+invalid_hex         "0x"({digit}|[g-zG-Z])*
+invalid_digit       {digit}+[a-zA-Z]
+invalid_int_literal {invalid_hex}|{invalid_digit}
 type_identifier     {uppercase_letter}({letter}|{digit}|"_")*
 object_identifier   {lowercase_letter}({letter}|{digit}|"_")*
 escape_sequence     [btnr"]|\\|"x"{hex_digit}{2}|"n"(" "|{tab})*
 escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
-/* string_literal      \"({regular_char}|{escaped_char})*\" */
 
 %x string
 %x backslash
@@ -92,37 +101,53 @@ regular_char        [^"\n\\]
 {object_identifier} { return makeToken(Token::OBJECT_IDENTIFIER); }
 {lf}                { resetColumn(); }
 {whitespace}        { countColumn(); }
-"//".*\n            { resetColumn(); }
+{invalid_int_literal} { 
+        literalStringStream << "lexical error: " << yytext << " is not a valid integer literal";
+        int err = makeError(literalStringStream.str(), yylineno, column);
+        literalStringStream.str("");
+        return err;
+    }
+
+"//"[^\n]*          {  }
 
 
 "(*"               { BEGIN(comment); 
-                        scLine = yylineno;
-                        scColumn = column;
+                        commentStack.push({yylineno, column});
+                        countColumn();
                     }
 <comment>"*)"      { 
+                        countColumn();
                         if(nestedComments == 0) 
                         {
                             BEGIN(INITIAL);
                         } else {
                             nestedComments--;
+                            commentStack.pop();
                         }
                     }
-<comment>"(*"      { nestedComments++; }
+<comment>"(*"      { 
+        nestedComments++; 
+        commentStack.push({yylineno, column});
+        countColumn(); 
+    }
 <comment>\n        { resetColumn(); }
 <comment>.         { countColumn(); }
-<comment><<EOF>>   { return makeError("Unterminated comment", scLine, scColumn); }
+<comment><<EOF>>   { 
+    BEGIN(INITIAL);
+    CommentPos pos = commentStack.top();
+    return makeError("lexical error: Unterminated comment", pos.line, pos.column); }
 
 \"                  {
     literalStringStream.str("");
-    BEGIN(string); 
-    yymore();
+    BEGIN(string);
+    literalStringStream << yytext;
     scLine = yylineno;
     scColumn = column;
+    countColumn();
     }
 
-<string>{regular_char}*   { literalStringStream << yytext; }
+<string>{regular_char}*   { literalStringStream << yytext; countColumn(); }
 <string>"\\"\n {
-    yytext += yyleng;
     resetColumn();
     BEGIN(backslash); 
     }
@@ -155,29 +180,38 @@ regular_char        [^"\n\\]
                 literalStringStream << yytext;
                 break;
         }
+        countColumn();
 }
 <string>\"              {
         literalStringStream << "\"";
         BEGIN(INITIAL);
         return makeToken(Token::STRING_LITERAL, literalStringStream.str(), scLine, scColumn); 
     }
-<string>\[^btnrx\\]({letter}|{digit})*           {
-        return makeError("Invalid escape sequence");
+<string>\\[^btnr\\"\n]({letter}|{digit})*           {
+        BEGIN(INITIAL);
+        return makeError("lexical error: Invalid escape sequence");
     }
-<string>{lf}           {
+<string>{lf}|\\\"            {
+        BEGIN(INITIAL);
+        int error = makeError("lexical error: character '\n' is illegal in this context.");
         resetColumn();
-        return makeError("Forbidden raw line feed");
+        return error;
     }
 
 <string><<EOF>>        {
         BEGIN(INITIAL);
-        return makeError("Unterminated string literal", scLine, scColumn);
+        return makeError("lexical error: Unterminated string literal", scLine, scColumn);
     }
 
-<backslash>{regular_char}         {  countColumn(); BEGIN(string); }
-<backslash>(" "|{tab})*           {  countColumn(); }
+<backslash>[^" "|\t]         { 
+        literalStringStream << yytext; 
+        countColumn();
+        BEGIN(string); 
+    }
+    
+<backslash>(" "|{tab})*           { countColumn(); }
 
-.                   { return makeError("Invalid character"); }
+.                   { return makeError("lexical error: Invalid character"); }
 
 
     /* comments */

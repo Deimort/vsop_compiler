@@ -16,12 +16,11 @@ public:
     int makeError(std::string value, int line, int column);
     void countColumn();
     void resetColumn();
-    std::vector<TokenInfo> scan();
+    bool scan();
     std::vector<TokenInfo> getTokens() const;
     bool hasErrorOccured() const { return hasError; }
 
 private:
-    std::vector<TokenInfo> tokens;
     std::string fileName;
     int column = 1;
     bool hasError = false;

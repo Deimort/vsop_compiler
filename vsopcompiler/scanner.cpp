@@ -1,4 +1,3 @@
-
 #include "scanner.hpp"
 #include "tokens.hpp"
 
@@ -11,7 +10,7 @@ int Scanner::makeToken(Token token, std::string value) {
 }
 
 int Scanner::makeToken(Token token, std::string value, int line, int column) {
-    tokens.push_back(TokenInfo(token, value, line, column));
+    std::cout << TokenInfo(token, value, line, column).to_string() << std::endl;
     countColumn();
     return static_cast<int>(token);
 }
@@ -35,7 +34,7 @@ void Scanner::resetColumn() {
     column = 1;
 }
 
-std::vector<TokenInfo> Scanner::scan() {
-    while (yylex());
-    return tokens;
+bool Scanner::scan() {
+    while (yylex() > 0);
+    return hasError;
 }
