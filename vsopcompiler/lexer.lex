@@ -1,4 +1,3 @@
-
 %{
     /* Includes */
     #include <string>
@@ -6,26 +5,32 @@
     #include <iomanip>
     #include <sstream>
     #include <stack>
-    #include "scanner.hpp"
-    #include "tokens.hpp"
+    #include "parser.hpp"
+    #include "driver.hpp"
 %}
 
-%option c++ noyywrap nounput noinput batch yylineno yyclass="Scanner"
+%option noyywrap nounput noinput batch
 
 %{
     using namespace std;
+    using namespace VSOP;
 
-    int makeToken(Token token);
     
-    std::stringstream literalStringStream;
+    Parser::symbol_type make_INTEGER_LITERAL(const string &s, const location &loc);
+
+    static void print_error(const position &pos, const string &m);
+
+    stringstream literalStringStream;
     int nestedComments = 0;
     int scLine, scColumn;
+
     typedef struct {
         int line;
         int column;
     } CommentPos;
 
     stack<CommentPos> commentStack;
+    location loc;
 %}
 
 lowercase_letter    [a-z]
@@ -49,75 +54,88 @@ escape_sequence     [btnr"]|\\|"x"{hex_digit}{2}|"n"(" "|{tab})*
 escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
 
-%x string
+%x string_literal
 %x string_line_feed
 %x comment
 %x backslash
 %%
+%{
+    loc.step();
+%}
 
 
     /* Operators */
-"{"                 { return makeToken(Token::LBRACE); }
-"}"                 { return makeToken(Token::RBRACE); }
-"("                 { return makeToken(Token::LPAR); }
-")"                 { return makeToken(Token::RPAR); }
-":"                 { return makeToken(Token::COLON); }
-";"                 { return makeToken(Token::SEMICOLON); }
-","                 { return makeToken(Token::COMMA); }
-"+"                 { return makeToken(Token::PLUS); }
-"-"                 { return makeToken(Token::MINUS); }
-"*"                 { return makeToken(Token::TIMES); }
-"/"                 { return makeToken(Token::DIV); }
-"^"                 { return makeToken(Token::POW); }
-"."                 { return makeToken(Token::DOT); }
-"="                 { return makeToken(Token::EQUAL); }
-"<"                 { return makeToken(Token::LOWER); }
-"<="                { return makeToken(Token::LOWER_EQUAL); }
-"<-"                { return makeToken(Token::ASSIGN); }
+"{"                 { return Parser::make_LBRACE(loc); }
+"}"                 { return Parser::make_RBRACE(loc); }
+"("                 { return Parser::make_LPAR(loc); }
+")"                 { return Parser::make_RPAR(loc); }
+":"                 { return Parser::make_COLON(loc); }
+";"                 { return Parser::make_SEMICOLON(loc); }
+","                 { return Parser::make_COMMA(loc); }
+"+"                 { return Parser::make_PLUS(loc); }
+"-"                 { return Parser::make_MINUS(loc); }
+"*"                 { return Parser::make_TIMES(loc); }
+"/"                 { return Parser::make_DIV(loc); }
+"^"                 { return Parser::make_POW(loc); }
+"."                 { return Parser::make_DOT(loc); }
+"="                 { return Parser::make_EQUAL(loc); }
+"<"                 { return Parser::make_LOWER(loc); }
+"<="                { return Parser::make_LOWER_EQUAL(loc); }
+"<-"                { return Parser::make_ASSIGN(loc); }
     /* keywords */
-"and"               { return makeToken(Token::AND); }
-"bool"              { return makeToken(Token::BOOL); }
-"class"             { return makeToken(Token::CLASS); }
-"do"                { return makeToken(Token::DO); }
-"else"              { return makeToken(Token::ELSE); }
-"extends"           { return makeToken(Token::EXTENDS); }
-"false"             { return makeToken(Token::FALSE); }
-"if"                { return makeToken(Token::IF); }
-"in"                { return makeToken(Token::IN); }
-"int32"             { return makeToken(Token::INT); }
-"isnull"            { return makeToken(Token::ISNULL); }
-"let"               { return makeToken(Token::LET); }
-"new"               { return makeToken(Token::NEW); }
-"not"               { return makeToken(Token::NOT); }
-"self"              { return makeToken(Token::SELF); }
-"string"            { return makeToken(Token::STRING); }
-"then"              { return makeToken(Token::THEN); }
-"true"              { return makeToken(Token::TRUE); }
-"unit"              { return makeToken(Token::UNIT); }
-"while"             { return makeToken(Token::WHILE); }
+"and"               { return Parser::make_AND(loc); }
+"bool"              { return Parser::make_BOOL(loc); }
+"class"             { return Parser::make_CLASS(loc); }
+"do"                { return Parser::make_DO(loc); }
+"else"              { return Parser::make_ELSE(loc); }
+"extends"           { return Parser::make_EXTENDS(loc); }
+"false"             { return Parser::make_FALSE(loc); }
+"if"                { return Parser::make_IF(loc); }
+"in"                { return Parser::make_IN(loc); }
+"int32"             { return Parser::make_INT32(loc); }
+"isnull"            { return Parser::make_ISNULL(loc); }	
+"let"               { return Parser::make_LET(loc); }
+"new"               { return Parser::make_NEW(loc); }
+"not"               { return Parser::make_NOT(loc); }
+"self"              { return Parser::make_SELF(loc); }
+"string"            { return Parser::make_STRING(loc); }
+"then"              { return Parser::make_THEN(loc); }
+"true"              { return Parser::make_TRUE(loc); }
+"unit"              { return Parser::make_UNIT(loc); }
+"while"             { return Parser::make_WHILE(loc); }
     /* literals */
-{integer_literal}   { return makeToken(Token::INTEGER_LITERAL); }
+{integer_literal}   { return make_INTEGER_LITERAL(yytext, loc); }
     /* identifiers */
-{type_identifier}   { return makeToken(Token::TYPE_IDENTIFIER); }
-{object_identifier} { return makeToken(Token::OBJECT_IDENTIFIER); }
-{lf}                { resetColumn(); }
-{whitespace}        { countColumn(); }
+{type_identifier}   { return Parser::make_TYPE_IDENTIFIER(yytext, loc); }
+{object_identifier} { return Parser::make_OBJECT_IDENTIFIER(yytext, loc); }
+
+    /* comments */
+{lf}                { loc.lines(); loc.step(); }
+{whitespace}        { loc.step(); }
 {invalid_int_literal} { 
         literalStringStream << "lexical error: " << yytext << " is not a valid integer literal";
-        int err = makeError(literalStringStream.str(), yylineno, column);
+        print_error(loc.begin, literalStringStream.str());
         literalStringStream.str("");
-        return err;
+        return Parser::make_YYerror(loc);
     }
 
 "//"[^\n]*          {  }
 
+\"                  {
+    BEGIN(string_literal);
+    literalStringStream.str("");
+    literalStringStream << yytext;
+    scLine = loc.begin.line;
+    scColumn = loc.begin.column;
+    loc.step();
+    }
 
 "(*"               { BEGIN(comment); 
-                        commentStack.push({yylineno, column});
-                        countColumn();
+                        commentStack.push({loc.begin.line, loc.begin.column});
+                        loc.step();
                     }
 <comment>"*)"      { 
-                        countColumn();
+                        loc.step();
                         if(nestedComments == 0) 
                         {
                             BEGIN(INITIAL);
@@ -126,80 +144,118 @@ regular_char        [^"\n\\]
                             commentStack.pop();
                         }
                     }
-<comment>"(*"      { 
-        nestedComments++; 
-        commentStack.push({yylineno, column});
-        countColumn(); 
-    }
-<comment>\n        { resetColumn(); }
-<comment>.         { countColumn(); }
+<comment>"(*"       {
+                        nestedComments++; 
+                        commentStack.push({loc.begin.line, loc.begin.column});
+                        loc.step();
+                    }
+<comment>{lf}        { loc.lines(); loc.step(); }
+<comment>.         { loc.step(); }
 <comment><<EOF>>   { 
     BEGIN(INITIAL);
-    CommentPos pos = commentStack.top();
-    return makeError("lexical error: Unterminated comment", pos.line, pos.column); }
+    commentStack.top();
+    print_error(loc.begin, "lexical error: Unterminated comment");
+    return Parser::make_YYerror(loc);
+} 
 
-\"                  {
-    literalStringStream.str("");
-    BEGIN(string);
-    literalStringStream << yytext;
-    scLine = yylineno;
-    scColumn = column;
-    countColumn();
-    }
 
-<string>{regular_char}*   { literalStringStream << yytext; countColumn(); }
 
-<string>\\                          { BEGIN(backslash); yymore(); }
-<backslash>b                        { literalStringStream << "\\x08"; BEGIN(string); countColumn(); }
-<backslash>t                        { literalStringStream << "\\x09"; BEGIN(string); countColumn(); }
-<backslash>n                        { literalStringStream << "\\x0a"; BEGIN(string); countColumn(); }
-<backslash>r                        { literalStringStream << "\\x0d"; BEGIN(string); countColumn(); }
-<backslash>x{hex_digit}{2}          { literalStringStream << yytext; BEGIN(string); countColumn(); }
-<backslash>\"                       { literalStringStream << "\\x22"; BEGIN(string); countColumn(); }
-<backslash>\\                       { literalStringStream << "\\x5c"; BEGIN(string); countColumn(); }
+<string_literal>{regular_char}*   { literalStringStream << yytext; loc.step(); }
+
+<string_literal>\\                          { BEGIN(backslash); }
+<backslash>b                        { literalStringStream << "\\x08"; BEGIN(string_literal); loc.step(); }
+<backslash>t                        { literalStringStream << "\\x09"; BEGIN(string_literal); loc.step(); }
+<backslash>n                        { literalStringStream << "\\x0a"; BEGIN(string_literal); loc.step(); }
+<backslash>r                        { literalStringStream << "\\x0d"; BEGIN(string_literal); loc.step(); }
+<backslash>x{hex_digit}{2}          { literalStringStream << yytext; BEGIN(string_literal); loc.step(); }
+<backslash>\"                       { literalStringStream << "\\x22"; BEGIN(string_literal); loc.step(); }
+<backslash>\\                       { literalStringStream << "\\x5c"; BEGIN(string_literal); loc.step(); }
 <backslash>.                        { 
         literalStringStream << yytext; 
-        BEGIN(string);
-        return makeError("lexical error: invalid escape sequence");
-        countColumn();
+        loc.step();
+        BEGIN(string_literal);
+        print_error(loc.begin, "lexical error: invalid escape sequence");
+        return Parser::make_YYerror(loc);
     }
 <backslash>\n                       { 
-        resetColumn();
+        loc.lines(); loc.step();
         BEGIN(string_line_feed); 
     }
 <backslash><<EOF>>                  { 
         BEGIN(INITIAL);
-        return makeError("lexical error: Unterminated string literal", scLine, scColumn);
+        print_error(loc.begin, "lexical error: Unterminated string literal");
+        return Parser::make_YYerror(loc);
     }
 
-<string>\"              {
+<string_literal>\"              {
         literalStringStream << "\"";
+        loc.step();
         BEGIN(INITIAL);
-        return makeToken(Token::STRING_LITERAL, literalStringStream.str(), scLine, scColumn); 
+        return Parser::make_STRING_LITERAL(literalStringStream.str(), loc); 
     }
-<string>{lf}            {
+<string_literal>{lf}            {
         BEGIN(INITIAL);
-        yyless(0);
-        int error = makeError("lexical error: character '\\n' is illegal in this context.");
-        resetColumn();
-        return error;
+        loc.lines();
+        loc.step();
+        print_error(loc.begin, "lexical error: character '\\n' is illegal in this context.");
+        return Parser::make_YYerror(loc);
     }
 
-<string><<EOF>>        {
+<string_literal><<EOF>>        {
         BEGIN(INITIAL);
-        return makeError("lexical error: Unterminated string literal", scLine, scColumn);
+        print_error(loc.begin, "lexical error: Unterminated string literal");
+        return Parser::make_YYerror(loc);
     }
 
 <string_line_feed>[^" "|\t]         { 
         literalStringStream << yytext; 
-        countColumn();
-        BEGIN(string); 
+        loc.step();
+        BEGIN(string_literal); 
     }
     
-<string_line_feed>(" "|{tab})*           { countColumn(); }
+<string_line_feed>(" "|{tab})*           { loc.step(); }
 
-.                   { return makeError("lexical error: Invalid character"); }
+.                   {  
+                        print_error(loc.begin, "lexical error: Invalid character"); 
+                        return Parser::make_YYerror(loc); 
+                    }
 
-
+<<EOF>>     {return Parser::make_YYEOF(loc);}
     /* comments */
-%% 
+%%
+
+Parser::symbol_type make_INTEGER_LITERAL(const string &s,
+                                const location& loc)
+{
+    int n = stoi(s);
+
+    return Parser::make_INTEGER_LITERAL(n, loc);
+}
+
+static void print_error(const position& pos, const string& m)
+{
+    cerr << *(pos.filename) << ":"
+         << pos.line << ":"
+         << pos.column << ":"
+         << " lexical error: "
+         << m
+         << endl;
+}
+
+void Driver::scan_begin() 
+{
+    loc.initialize(&source_file);
+
+    if (source_file.empty() || source_file == "-")
+        yyin = stdin;
+    else if (!(yyin = fopen(source_file.c_str(), "r")))
+    {
+        cerr << "cannot open " << source_file << ": " << strerror(errno) << '\n';
+        exit(EXIT_FAILURE);
+    }
+}
+
+void Driver::scan_end()
+{
+    fclose(yyin);
+}

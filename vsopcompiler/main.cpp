@@ -1,30 +1,70 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-#include "scanner.hpp"
-#include "tokens.hpp"
 
-int main(int argc, char **argv)
+#include "driver.hpp"
+
+using namespace std;
+
+enum class Mode
 {
-    if (argc != 3)
+    LEX,
+    PARSE
+};
+
+static const map<string, Mode> flag_to_mode = {
+    {"-l", Mode::LEX},
+    {"-p", Mode::PARSE},
+};
+
+int main(int argc, char const *argv[])
+{
+
+    Mode mode;
+    string source_file;
+
+    if (argc == 2)
     {
-        std::cerr << "Usage: " << argv[0] << " -l input_file\n";
-        return 1;
+        mode = Mode::PARSE;
+        source_file = argv[1];
+    }
+    else if (argc == 3)
+    {
+        if (flag_to_mode.count(argv[1]) == 0)
+        {
+            cerr << "Invalid mode: " << argv[1] << endl;
+            return -1;
+        }
+        mode = flag_to_mode.at(argv[1]);
+        source_file = argv[2];
+    }
+    else
+    {
+        cerr << "Usage: " << argv[0] << " [-l|-p] <source_file>" << endl;
+        return -1;
     }
 
-    if (std::string(argv[1]) != "-l")
+    VSOP::Driver driver = VSOP::Driver(source_file);
+
+    int res;
+    switch (mode)
     {
-        std::cerr << "Error: invalid option '" << argv[1] << "'\n";
-        return 1;
-    }
-    std::ifstream inputFile(argv[2]);
-    if (!inputFile.is_open())
-    {
-        std::cerr << "Error: could not open input file '" << argv[1] << "'\n";
-        return 1;
+    case Mode::LEX:
+        res = driver.lex();
+
+        if (res == 0)
+            driver.print_tokens();
+
+        return res;
+
+    case Mode::PARSE:
+        res = driver.parse();
+
+        if (res == 0)
+            cout << "Result: " << driver.result << endl;
+
+        return res;
     }
 
-    Scanner lexer(&inputFile, argv[2]);
-
-    return lexer.scan();
+    return 0;
 }
