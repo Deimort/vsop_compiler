@@ -39,6 +39,7 @@
 // C++ code put inside header file
 %code requires {
     #include <string>
+    #include <memory>
 
     namespace VSOP
     {
@@ -97,10 +98,18 @@
     WHILE           "while"
 ;
 
+%union {
+    std::unique_ptr<ProgramNode> programNode;
+    std::unique_ptr<ClassNode> classNode;
+}
+
 %token <int> INTEGER_LITERAL "integer-literal"
 %token <std::string> STRING_LITERAL "string-literal"
 %token <std::string> TYPE_IDENTIFIER "type-identifier"
 %token <std::string> OBJECT_IDENTIFIER "object-identifier"
+
+%type <programNode> program
+%type <classNode> classList
 
 // Precedence
 %left "."
@@ -117,15 +126,17 @@
 // Grammar rules
 %start program;
 
-program:
-    class
-    | class program;
+program: classList { $$ = std::make_unique<programNode>()};
+
+classList:
+    { $$ = std::vector<classNode>(); }
+    | class classList { $$ = std::move($2); $$->push_back(std::move($1)); };
 
 class:
-    CLASS TYPE_IDENTIFIER class-body
-    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER class-body;
+    CLASS TYPE_IDENTIFIER classBody
+    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER classBody;
 
-class-body:
+classBody:
     LBRACE class-body-content RBRACE;
 
 class-body-content:
@@ -149,7 +160,6 @@ type:
     | UNIT;
 
 formals:
-    formal
     | formal COMMA formals;
 
 formal:
@@ -173,7 +183,6 @@ expr:
     | SELF;
 
 expr-list:
-    expr
     | expr SEMICOLON expr-list;
 
 if-expr:
@@ -192,7 +201,7 @@ assign-expr:
 
 unop-expr:
     NOT expr
-    | UNARYMINUS expr
+    | MINUS expr
     | ISNULL expr;
 
 binop-expr:

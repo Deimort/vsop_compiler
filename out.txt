@@ -1,0 +1,209 @@
+bison -d -o parser.cpp parser.y
+parser.y: warning: 81 shift/reduce conflicts [-Wconflicts-sr]
+parser.y: note: rerun with option '-Wcounterexamples' to generate conflict counterexamples
+g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o main.o main.cpp
+g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o driver.o driver.cpp
+g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o parser.o parser.cpp
+flex  -o lexer.cpp lexer.lex
+g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o lexer.o lexer.cpp
+g++ -o vsopc  main.o driver.o parser.o lexer.o
+--- Running test: MyClass-example.txt ---
+1,1,class
+1,7,type-identifier,MyClass
+1,15,lbrace
+2,5,object-identifier,s
+2,7,colon
+2,9,string
+2,16,assign
+2,19,string-literal,"One\x0a\x1b[33;mTwo and three\x0d\x0a"
+3,30,semicolon
+4,5,object-identifier,i
+4,7,colon
+4,9,int32
+4,15,assign
+4,18,integer-literal,27
+4,22,semicolon
+5,1,rbrace
+--- Test MyClass-example.txt complete ---
+
+--- Running test: eof-after-comment.txt ---
+1,1,integer-literal,42
+--- Test eof-after-comment.txt complete ---
+
+--- Running test: factorial-example.txt ---
+1,1,class
+1,7,type-identifier,Main
+1,12,lbrace
+2,5,object-identifier,factorial
+2,14,lpar
+2,15,object-identifier,n
+2,17,colon
+2,19,int32
+2,24,rpar
+2,26,colon
+2,28,int32
+2,34,lbrace
+3,9,if
+3,12,object-identifier,n
+3,14,lower
+3,16,integer-literal,2
+3,18,then
+3,23,integer-literal,1
+4,9,else
+4,14,object-identifier,n
+4,16,times
+4,18,object-identifier,factorial
+4,27,lpar
+4,28,object-identifier,n
+4,30,minus
+4,32,integer-literal,1
+4,33,rpar
+5,5,rbrace
+7,5,object-identifier,main
+7,9,lpar
+7,10,rpar
+7,12,colon
+7,14,int32
+7,20,lbrace
+8,9,object-identifier,print
+8,14,lpar
+8,15,string-literal,"Enter an integer greater-than or equal to 0: "
+8,62,rpar
+8,63,semicolon
+9,9,let
+9,13,object-identifier,n
+9,15,colon
+9,17,int32
+9,23,assign
+9,26,object-identifier,inputInt32
+9,36,lpar
+9,37,rpar
+9,39,in
+10,9,if
+10,12,object-identifier,n
+10,14,lower
+10,16,integer-literal,0
+10,18,then
+10,23,lbrace
+11,13,object-identifier,print
+11,18,lpar
+11,19,string-literal,"Error: number must be greater-than or equal to 0.\x0a"
+11,72,rpar
+11,73,semicolon
+12,13,minus
+12,14,integer-literal,1
+13,9,rbrace
+13,11,else
+13,16,lbrace
+14,13,object-identifier,print
+14,18,lpar
+14,19,string-literal,"The factorial of "
+14,38,rpar
+14,39,dot
+14,40,object-identifier,printInt32
+14,50,lpar
+14,51,object-identifier,n
+14,52,rpar
+14,53,dot
+14,54,object-identifier,print
+14,59,lpar
+14,60,string-literal," is "
+14,66,rpar
+14,67,semicolon
+15,13,object-identifier,printInt32
+15,23,lpar
+15,24,object-identifier,factorial
+15,33,lpar
+15,34,object-identifier,n
+15,35,rpar
+15,36,rpar
+15,37,dot
+15,38,object-identifier,print
+15,43,lpar
+15,44,string-literal,"\x0a"
+15,48,rpar
+15,49,semicolon
+16,13,integer-literal,0
+17,9,rbrace
+18,5,rbrace
+19,1,rbrace
+--- Test factorial-example.txt complete ---
+
+--- Running test: incomplete-hex-number.txt ---
+incomplete-hex-number.txt:1:1: lexical error: 0x is not a valid integer literal
+--- Test incomplete-hex-number.txt complete ---
+
+--- Running test: invalid-lf-in-string.txt ---
+invalid-lf-in-string.txt:1:35: lexical error: character '\n' is illegal in this context.
+--- Test invalid-lf-in-string.txt complete ---
+
+--- Running test: multiline-comments.txt ---
+2,1,integer-literal,1
+3,1,integer-literal,2
+3,32,integer-literal,3
+3,34,integer-literal,4
+4,57,integer-literal,5
+7,1,integer-literal,6
+12,1,integer-literal,7
+14,1,integer-literal,8
+16,1,integer-literal,9
+17,58,integer-literal,10
+19,53,integer-literal,11
+20,6,integer-literal,12
+22,1,integer-literal,13
+--- Test multiline-comments.txt complete ---
+
+--- Running test: multiline-string.txt ---
+1,1,string-literal,"Here it is, the broken\x0aline.\x0a"
+4,1,string-literal,"Another one,\x0awithout leading space.\x0a"
+--- Test multiline-string.txt complete ---
+
+--- Running test: string-ends-in-backslash-x-3.txt ---
+string-ends-in-backslash-x-3.txt:1:20: lexical error: invalid escape sequence
+--- Test string-ends-in-backslash-x-3.txt complete ---
+
+--- Running test: string-ends-in-backslash-x.txt ---
+string-ends-in-backslash-x.txt:1:20: lexical error: invalid escape sequence
+--- Test string-ends-in-backslash-x.txt complete ---
+
+--- Running test: string-ends-in-backslash.txt ---
+string-ends-in-backslash.txt:1:1: lexical error: Unterminated string literal
+--- Test string-ends-in-backslash.txt complete ---
+
+--- Running test: strings-with-escapes.txt ---
+1,1,string-literal,"String with backspace_\x08"
+2,1,string-literal,"String with\x09tab"
+3,1,string-literal,"String with line feed.\x0a"
+4,1,string-literal,"String with line feed\x0aand second line.\x0a"
+5,1,string-literal,"Overwritten\x0dAllows overwritting current line in well-behaved terminals.\x0a"
+6,1,string-literal,"Here is a \x22nested string\x22.\x0a"
+7,1,string-literal,"A string escape sequence is introduced by a `\x5c`.\x0a"
+8,1,string-literal,"Here follows a form feed.\x0a\x0bAnd now some new page content.\x0a"
+--- Test strings-with-escapes.txt complete ---
+
+--- Running test: unknown-escape-sequence.txt ---
+unknown-escape-sequence.txt:1:26: lexical error: invalid escape sequence
+--- Test unknown-escape-sequence.txt complete ---
+
+--- Running test: unterminated-comment.txt ---
+1,1,integer-literal,42
+unterminated-comment.txt:3:3: lexical error: Unterminated comment
+--- Test unterminated-comment.txt complete ---
+
+--- Running test: unterminated-string.txt ---
+1,1,integer-literal,42
+unterminated-string.txt:2:5: lexical error: Unterminated string literal
+--- Test unterminated-string.txt complete ---
+
+--- Running test: wrong-backslash-x-escape.txt ---
+wrong-backslash-x-escape.txt:1:17: lexical error: invalid escape sequence
+--- Test wrong-backslash-x-escape.txt complete ---
+
+--- Running test: wrong-decimal-number.txt ---
+wrong-decimal-number.txt:1:1: lexical error: 42x is not a valid integer literal
+--- Test wrong-decimal-number.txt complete ---
+
+--- Running test: wrong-hex-number.txt ---
+wrong-hex-number.txt:1:1: lexical error: 0x42g is not a valid integer literal
+--- Test wrong-hex-number.txt complete ---
+

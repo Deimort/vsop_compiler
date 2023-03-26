@@ -79,8 +79,8 @@ static void print_token(Parser::symbol_type token)
     position pos = token.location.begin;
     Parser::token_type type = (Parser::token_type)token.type_get();
 
-    cout << pos.line << ":"
-         << pos.column << ":"
+    cout << pos.line << ","
+         << pos.column << ","
          << type_to_string.at(type);
 
     switch (type)
@@ -88,14 +88,28 @@ static void print_token(Parser::symbol_type token)
     case Parser::token::INTEGER_LITERAL:
     {
         int value = token.value.as<int>();
-        cout << ":" << value;
+        cout << "," << value;
         break;
     }
 
     case Parser::token::TYPE_IDENTIFIER:
     {
         string id = token.value.as<string>();
-        cout << ":" << id;
+        cout << "," << id;
+        break;
+    }
+
+    case Parser::token::OBJECT_IDENTIFIER:
+    {
+        string id = token.value.as<string>();
+        cout << "," << id;
+        break;
+    }
+
+    case Parser::token::STRING_LITERAL:
+    {
+        string id = token.value.as<string>();
+        cout << "," << id;
         break;
     }
 
@@ -120,10 +134,12 @@ int Driver::lex()
             break;
 
         if ((Parser::token_type)token.type_get() != Parser::token::YYerror)
-            tokens.push_back(token);
-
-        else
+            print_token(token);
+        else {
             error = 1;
+            break;
+        }
+            
     }
 
     scan_end();
@@ -143,10 +159,4 @@ int Driver::parse()
     delete parser;
 
     return res;
-}
-
-void Driver::print_tokens()
-{
-    for (auto token : tokens)
-        print_token(token);
 }

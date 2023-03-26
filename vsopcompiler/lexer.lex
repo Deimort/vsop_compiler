@@ -20,17 +20,14 @@
 
     static void print_error(const position &pos, const string &m);
 
+    #define YY_USER_ACTION  loc.columns(yyleng);
+
     stringstream literalStringStream;
     int nestedComments = 0;
-    int scLine, scColumn;
 
-    typedef struct {
-        int line;
-        int column;
-    } CommentPos;
-
-    stack<CommentPos> commentStack;
+    stack<location> commentStack;
     location loc;
+    location strLoc;
 %}
 
 lowercase_letter    [a-z]
@@ -113,7 +110,7 @@ regular_char        [^"\n\\]
 {lf}                { loc.lines(); loc.step(); }
 {whitespace}        { loc.step(); }
 {invalid_int_literal} { 
-        literalStringStream << "lexical error: " << yytext << " is not a valid integer literal";
+        literalStringStream << yytext << " is not a valid integer literal";
         print_error(loc.begin, literalStringStream.str());
         literalStringStream.str("");
         return Parser::make_YYerror(loc);
@@ -125,13 +122,12 @@ regular_char        [^"\n\\]
     BEGIN(string_literal);
     literalStringStream.str("");
     literalStringStream << yytext;
-    scLine = loc.begin.line;
-    scColumn = loc.begin.column;
+    strLoc = loc;
     loc.step();
     }
 
 "(*"               { BEGIN(comment); 
-                        commentStack.push({loc.begin.line, loc.begin.column});
+                        commentStack.push(loc);
                         loc.step();
                     }
 <comment>"*)"      { 
@@ -146,15 +142,15 @@ regular_char        [^"\n\\]
                     }
 <comment>"(*"       {
                         nestedComments++; 
-                        commentStack.push({loc.begin.line, loc.begin.column});
+                        commentStack.push(loc);
                         loc.step();
                     }
 <comment>{lf}        { loc.lines(); loc.step(); }
 <comment>.         { loc.step(); }
 <comment><<EOF>>   { 
     BEGIN(INITIAL);
-    commentStack.top();
-    print_error(loc.begin, "lexical error: Unterminated comment");
+    location commLoc = commentStack.top();
+    print_error(commLoc.begin, "Unterminated comment");
     return Parser::make_YYerror(loc);
 } 
 
@@ -167,14 +163,14 @@ regular_char        [^"\n\\]
 <backslash>t                        { literalStringStream << "\\x09"; BEGIN(string_literal); loc.step(); }
 <backslash>n                        { literalStringStream << "\\x0a"; BEGIN(string_literal); loc.step(); }
 <backslash>r                        { literalStringStream << "\\x0d"; BEGIN(string_literal); loc.step(); }
-<backslash>x{hex_digit}{2}          { literalStringStream << yytext; BEGIN(string_literal); loc.step(); }
+<backslash>x{hex_digit}{2}          { literalStringStream << "\\" << yytext; BEGIN(string_literal); loc.step(); }
 <backslash>\"                       { literalStringStream << "\\x22"; BEGIN(string_literal); loc.step(); }
 <backslash>\\                       { literalStringStream << "\\x5c"; BEGIN(string_literal); loc.step(); }
 <backslash>.                        { 
         literalStringStream << yytext; 
-        loc.step();
         BEGIN(string_literal);
-        print_error(loc.begin, "lexical error: invalid escape sequence");
+        print_error(loc.begin, "invalid escape sequence");
+        loc.step();
         return Parser::make_YYerror(loc);
     }
 <backslash>\n                       { 
@@ -183,7 +179,7 @@ regular_char        [^"\n\\]
     }
 <backslash><<EOF>>                  { 
         BEGIN(INITIAL);
-        print_error(loc.begin, "lexical error: Unterminated string literal");
+        print_error(strLoc.begin, "Unterminated string literal");
         return Parser::make_YYerror(loc);
     }
 
@@ -191,20 +187,20 @@ regular_char        [^"\n\\]
         literalStringStream << "\"";
         loc.step();
         BEGIN(INITIAL);
-        return Parser::make_STRING_LITERAL(literalStringStream.str(), loc); 
+        return Parser::make_STRING_LITERAL(literalStringStream.str(), strLoc); 
     }
 <string_literal>{lf}            {
         BEGIN(INITIAL);
+        print_error(loc.begin, "character '\\n' is illegal in this context.");
         loc.lines();
         loc.step();
-        print_error(loc.begin, "lexical error: character '\\n' is illegal in this context.");
         return Parser::make_YYerror(loc);
     }
 
 <string_literal><<EOF>>        {
         BEGIN(INITIAL);
-        print_error(loc.begin, "lexical error: Unterminated string literal");
-        return Parser::make_YYerror(loc);
+        print_error(strLoc.begin, "Unterminated string literal");
+        return Parser::make_YYerror(strLoc);
     }
 
 <string_line_feed>[^" "|\t]         { 
@@ -216,8 +212,8 @@ regular_char        [^"\n\\]
 <string_line_feed>(" "|{tab})*           { loc.step(); }
 
 .                   {  
-                        print_error(loc.begin, "lexical error: Invalid character"); 
-                        return Parser::make_YYerror(loc); 
+                        print_error(strLoc.begin, "Invalid character"); 
+                        return Parser::make_YYerror(strLoc); 
                     }
 
 <<EOF>>     {return Parser::make_YYEOF(loc);}
@@ -227,7 +223,11 @@ regular_char        [^"\n\\]
 Parser::symbol_type make_INTEGER_LITERAL(const string &s,
                                 const location& loc)
 {
-    int n = stoi(s);
+    int n;
+    if(s.substr(0, 2) == "0x")
+        n = stoi(s, 0, 16);
+    else
+        n = stoi(s);
 
     return Parser::make_INTEGER_LITERAL(n, loc);
 }
