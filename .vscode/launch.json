@@ -5,20 +5,46 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "(gdb) Lancer",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vsopcompiler/vsopc",
+            "args": [
+                "-p",
+                "${input:filePath}"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Activer l'impression en mode Pretty pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Définir la version désassemblage sur Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "C++ Launch (Makefile)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vsopcompiler/vsopc", // Replace with the path to your executable
             "args": [
-                "-l",
+                "-p",
                 "${input:filePath}"
             ], // Add any command-line arguments for the executable here
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/vsopcompiler",
             "environment": [],
             "externalConsole": true,
-            "MIMode": "gdb",
-            "preLaunchTask": "build" // Replace with the name of your build task in the Makefile
+            "MIMode": "gdb",// Replace with the name of your build task in the Makefile
         }
     ],
     "inputs": [
@@ -29,7 +55,8 @@
             "default": "${workspaceFolder}/examples/my-class.txt",
             "options": [
                 "${workspaceFolder}/examples/my-class.txt",
-                "${workspaceFolder}/examples/correct.txt"
+                "${workspaceFolder}/examples/correct.txt",
+                "${workspaceFolder}/parser/factorial.txt",
             ]
         }
     ]

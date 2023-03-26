@@ -1,6 +1,6 @@
 CXX 			= g++
 
-CXXFLAGS 		= -Wall -Wextra -g3 -std=c++11 -O3
+CXXFLAGS 		= -Wall -Wextra -g -std=c++11 -O3
 
 BISONFLAGS 		= -d
 

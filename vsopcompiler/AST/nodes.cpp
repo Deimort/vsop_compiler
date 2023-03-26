@@ -1,4 +1,5 @@
 #include "nodes.hpp"
+#include <iostream>
 
 void Serializer::setType(const std::string &type)
 {
@@ -105,11 +106,13 @@ std::string ClassNode::serialize() const
 
 std::string FieldNode::serialize() const
 {
+
     Serializer serializer;
     serializer.setType("Field");
     serializer.addString(m_name);
     serializer.addString(m_type);
-    serializer.addString(m_initExpr->serialize());
+    if (m_initExpr)
+        serializer.addString(m_initExpr->serialize());
     return serializer.serialize();
 }
 
@@ -243,7 +246,6 @@ std::string BlockNode::serialize() const
 std::string LiteralNode::serialize() const
 {
     Serializer serializer;
-    serializer.setType("Literal");
     serializer.addString(m_value);
     return serializer.serialize();
 }

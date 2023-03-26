@@ -230,7 +230,7 @@ public:
 protected:
     void completeOperator(Serializer &serializer) const override
     {
-        serializer.addString("not");
+        serializer.addString("isnull");
     }
 };
 

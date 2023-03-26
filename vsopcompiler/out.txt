@@ -1,8 +1,0 @@
-bison -d -o parser.cpp parser.y
-g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o main.o main.cpp
-g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o driver.o driver.cpp
-g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o parser.o parser.cpp
-flex  -o lexer.cpp lexer.lex
-g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o lexer.o lexer.cpp
-g++ -Wall -Wextra -g3 -std=c++11 -O3   -c -o AST/nodes.o AST/nodes.cpp
-g++ -o vsopc  main.o driver.o parser.o lexer.o AST/nodes.o

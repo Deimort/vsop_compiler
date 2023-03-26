@@ -97,12 +97,13 @@
     WHILE           "while"
 ;
 
-
+// 
 %token <int> INTEGER_LITERAL "integer-literal"
 %token <std::string> STRING_LITERAL "string-literal"
 %token <std::string> TYPE_IDENTIFIER "type-identifier"
 %token <std::string> OBJECT_IDENTIFIER "object-identifier"
 
+// Non-terminals
 %type <std::vector<std::shared_ptr<ClassNode>>> program
 %type <std::vector<std::shared_ptr<ClassNode>>> classList
 %type <std::shared_ptr<ClassNode>> class
@@ -129,24 +130,24 @@
 %type <std::shared_ptr<FormalNode>> formal
 
 // Precedence
-%left "."
-%right "^"
-%right UNARYMINUS "isnull"
-%left "*" "/"
-%left "+" "-"
-%nonassoc "<" "<=" "="
-%right "not"
-%left "and"
-%right "<-"
-%right "then" "else"
-%right "while" "do"
 %right "in"
+%right "while" "do"
+%right "then" "else"
+%right "<-"
+%left "and"
+%right "not"
+%nonassoc "<" "<=" "="
+%left "+" "-"
+%left "*" "/"
+%right UNARYMINUS "isnull"
+%right "^"
+%left "."
 
 %%
 // Grammar rules
 %start program;
 
-program: classList { $$ = $1; driver.setProgram($$); };
+program: classList { $$ = $1; driver.setProgram($$); driver.result = 0; };
 
 classList:
     class { $$ = std::vector<std::shared_ptr<ClassNode>>(); $$.push_back($1); }
@@ -179,7 +180,7 @@ type:
     | UNIT { $$ = "unit"; };
 
 formals:
-    formal COMMA formals { $$ = $3; $$.push_back($1); }
+    formal COMMA formals { $$ = $3; $$.insert($$.begin(), $1); }
     | formal { $$ = std::vector<std::shared_ptr<FormalNode>>(); $$.push_back($1); }
     | %empty { $$ = std::vector<std::shared_ptr<FormalNode>>(); };
 
@@ -191,7 +192,7 @@ block:
 
 exprList:
     expr { $$ = std::vector<std::shared_ptr<ExprNode>>(); $$.push_back($1); }
-    | expr SEMICOLON exprList { $$ = $3; $$.push_back($1); }
+    | expr SEMICOLON exprList { $$ = $3; $$.insert($$.begin(), $1); }
 
 expr:
     ifExpr { $$ = $1;}
@@ -211,7 +212,7 @@ expr:
 
 args:
     expr { $$ = std::vector<std::shared_ptr<ExprNode>>(); $$.push_back($1); }
-    | expr COMMA args { $$ = $3; $$.push_back($1); }
+    | expr COMMA args { $$ = $3; $$.insert($$.begin(), $1); }
     | %empty { $$ = std::vector<std::shared_ptr<ExprNode>>(); };
 
 ifExpr:
@@ -223,7 +224,7 @@ whileExpr:
 
 letExpr:
     LET OBJECT_IDENTIFIER COLON type IN expr { $$ = std::make_shared<LetNode>($2, $4, $6); }
-    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr { $$ = std::make_shared<LetNode>($2, $4, $6, $8); };
+    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr { $$ = std::make_shared<LetNode>($2, $4, $8, $6); };
 
 assignExpr:
     OBJECT_IDENTIFIER ASSIGN expr { $$ = std::make_shared<AssignNode>($1, $3); };
@@ -264,6 +265,7 @@ booleanLiteral:
 
 void VSOP::Parser::error(const location_type& l, const std::string& m)
 {
+    driver.result = 1;
     const position &pos = l.begin;
 
     cerr << *(pos.filename) << ":"

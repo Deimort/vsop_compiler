@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
 
 #include "parser.hpp"
 #include "AST/nodes.hpp"
@@ -95,6 +96,11 @@ namespace VSOP
         void setProgram(std::vector<std::shared_ptr<ClassNode>> classes)
         {
             this->program = std::shared_ptr<ProgramNode>(new ProgramNode(classes));
+        }
+
+        void printAST() const
+        {
+            std::cout << this->program->serialize() << std::endl;
         }
 
     private:

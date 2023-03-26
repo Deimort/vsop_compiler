@@ -212,8 +212,8 @@ regular_char        [^"\n\\]
 <string_line_feed>(" "|{tab})*           { loc.step(); }
 
 .                   {  
-                        print_error(strLoc.begin, "Invalid character"); 
-                        return Parser::make_YYerror(strLoc); 
+                        print_error(loc.begin, "Invalid character"); 
+                        return Parser::make_YYerror(loc); 
                     }
 
 <<EOF>>     {return Parser::make_YYEOF(loc);}
