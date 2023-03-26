@@ -40,6 +40,7 @@
 %code requires {
     #include <string>
     #include <memory>
+    #include "AST/nodes.hpp"
 
     namespace VSOP
     {
@@ -51,9 +52,7 @@
 %parse-param {VSOP::Driver &driver}
 
 %code {
-    
     #include "driver.hpp"
-
     using namespace std;
 }
 
@@ -98,18 +97,36 @@
     WHILE           "while"
 ;
 
-%union {
-    std::unique_ptr<ProgramNode> programNode;
-    std::unique_ptr<ClassNode> classNode;
-}
 
 %token <int> INTEGER_LITERAL "integer-literal"
 %token <std::string> STRING_LITERAL "string-literal"
 %token <std::string> TYPE_IDENTIFIER "type-identifier"
 %token <std::string> OBJECT_IDENTIFIER "object-identifier"
 
-%type <programNode> program
-%type <classNode> classList
+%type <std::vector<std::shared_ptr<ClassNode>>> program
+%type <std::vector<std::shared_ptr<ClassNode>>> classList
+%type <std::shared_ptr<ClassNode>> class
+%type <std::shared_ptr<ClassBodyNode>> classBody
+%type <std::shared_ptr<ClassBodyNode>> classBodyContent
+%type <std::shared_ptr<FieldNode>> field
+%type <std::shared_ptr<MethodNode>> method
+%type <std::string> type
+%type <std::shared_ptr<ExprNode>> expr
+%type <std::vector<std::shared_ptr<ExprNode>>> exprList
+%type <std::shared_ptr<BlockNode>> block
+%type <std::shared_ptr<IfNode>> ifExpr
+%type <std::shared_ptr<WhileNode>> whileExpr
+%type <std::shared_ptr<LetNode>> letExpr
+%type <std::shared_ptr<NewNode>> newExpr
+%type <std::shared_ptr<CallNode>> callExpr
+%type <std::shared_ptr<AssignNode>> assignExpr
+%type <std::shared_ptr<UnOpNode>> unOpExpr
+%type <std::shared_ptr<BinOpNode>> binOpExpr
+%type <std::shared_ptr<LiteralNode>> literal
+%type <std::shared_ptr<LiteralNode>> booleanLiteral
+%type <std::vector<std::shared_ptr<ExprNode>>> args
+%type <std::vector<std::shared_ptr<FormalNode>>> formals
+%type <std::shared_ptr<FormalNode>> formal
 
 // Precedence
 %left "."
@@ -121,124 +138,127 @@
 %right "not"
 %left "and"
 %right "<-"
+%right "then" "else"
+%right "while" "do"
+%right "in"
 
 %%
 // Grammar rules
 %start program;
 
-program: classList { $$ = std::make_unique<programNode>()};
+program: classList { $$ = $1; driver.setProgram($$); };
 
 classList:
-    { $$ = std::vector<classNode>(); }
-    | class classList { $$ = std::move($2); $$->push_back(std::move($1)); };
+    class { $$ = std::vector<std::shared_ptr<ClassNode>>(); $$.push_back($1); }
+    | classList class { $$ = $1; $$.push_back($2); };
 
 class:
-    CLASS TYPE_IDENTIFIER classBody
-    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER classBody;
+    CLASS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>($2, $3); }
+    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>($2, $5, $4); };
 
 classBody:
-    LBRACE class-body-content RBRACE;
+    LBRACE classBodyContent RBRACE { $$ = $2; };
 
-class-body-content:
-    field
-    | method
-    | field class-body-content
-    | method class-body-content;
+classBodyContent:
+    classBodyContent field { $$ = $1; $$->addField($2); }
+    | classBodyContent method { $$ = $1; $$->addMethod($2); }
+    | %empty { $$ = std::make_shared<ClassBodyNode>(); };
 
 field:
-    OBJECT_IDENTIFIER COLON type
-    | OBJECT_IDENTIFIER COLON type ASSIGN expr SEMICOLON;
+    OBJECT_IDENTIFIER COLON type SEMICOLON { $$ = std::make_shared<FieldNode>($1, $3); }
+    | OBJECT_IDENTIFIER COLON type ASSIGN expr SEMICOLON { $$ = std::make_shared<FieldNode>($1, $3, $5); };
 
 method:
-    OBJECT_IDENTIFIER LPAR formals RPAR COLON type block;
+    OBJECT_IDENTIFIER LPAR formals RPAR COLON type block { $$ = std::make_shared<MethodNode>($1, $3, $6, $7); };
 
 type:
-    TYPE_IDENTIFIER
-    | INT32
-    | BOOL
-    | STRING
-    | UNIT;
+    TYPE_IDENTIFIER { $$ = $1; }
+    | INT32 { $$ = "int32"; }
+    | BOOL { $$ = "bool"; }
+    | STRING { $$ = "string"; }
+    | UNIT { $$ = "unit"; };
 
 formals:
-    | formal COMMA formals;
+    formal COMMA formals { $$ = $3; $$.push_back($1); }
+    | formal { $$ = std::vector<std::shared_ptr<FormalNode>>(); $$.push_back($1); }
+    | %empty { $$ = std::vector<std::shared_ptr<FormalNode>>(); };
 
 formal:
-    OBJECT_IDENTIFIER COLON type;
+    OBJECT_IDENTIFIER COLON type { $$ = std::make_shared<FormalNode>($1, $3); };
 
 block:
-    LBRACE expr-list LBRACE;
+    LBRACE exprList RBRACE { $$ = std::make_shared<BlockNode>($2); };
 
+exprList:
+    expr { $$ = std::vector<std::shared_ptr<ExprNode>>(); $$.push_back($1); }
+    | expr SEMICOLON exprList { $$ = $3; $$.push_back($1); }
 
 expr:
-    if-expr
-    | while-expr
-    | let-expr
-    | assign-expr
-    | unop-expr
-    | binop-expr
-    | call-expr
-    | new-expr
-    | literal
-    | OBJECT_IDENTIFIER
-    | SELF;
+    ifExpr { $$ = $1;}
+    | whileExpr { $$ = $1; }
+    | letExpr { $$ = $1;}
+    | assignExpr { $$ = $1;}
+    | unOpExpr { $$ = $1;}
+    | binOpExpr { $$ = $1;}
+    | callExpr { $$ = $1;}
+    | newExpr { $$ = $1;}
+    | OBJECT_IDENTIFIER { $$ = std::make_shared<IdentifierNode>($1); }
+    | SELF { $$ = std::make_shared<SelfNode>(); }
+    | literal { $$ = $1; }
+    | LPAR RPAR { $$ = std::make_shared<UnitNode>(); }
+    | LPAR expr RPAR { $$ = $2; }
+    | block { $$ = $1; };
 
-expr-list:
-    | expr SEMICOLON expr-list;
+args:
+    expr { $$ = std::vector<std::shared_ptr<ExprNode>>(); $$.push_back($1); }
+    | expr COMMA args { $$ = $3; $$.push_back($1); }
+    | %empty { $$ = std::vector<std::shared_ptr<ExprNode>>(); };
 
-if-expr:
-    IF expr THEN expr
-    | IF expr THEN expr ELSE expr;
+ifExpr:
+    IF expr THEN expr { $$ = std::make_shared<IfNode>($2, $4); }
+    | IF expr THEN expr ELSE expr { $$ = std::make_shared<IfNode>($2, $4, $6); }
 
-while-expr:
-    WHILE expr DO expr;
+whileExpr:
+    WHILE expr DO expr { $$ = std::make_shared<WhileNode>($2, $4); };
 
-let-expr:
-    LET OBJECT_IDENTIFIER COLON type IN expr
-    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr;
+letExpr:
+    LET OBJECT_IDENTIFIER COLON type IN expr { $$ = std::make_shared<LetNode>($2, $4, $6); }
+    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr { $$ = std::make_shared<LetNode>($2, $4, $6, $8); };
 
-assign-expr:
-    OBJECT_IDENTIFIER ASSIGN expr;
+assignExpr:
+    OBJECT_IDENTIFIER ASSIGN expr { $$ = std::make_shared<AssignNode>($1, $3); };
 
-unop-expr:
-    NOT expr
-    | MINUS expr
-    | ISNULL expr;
+unOpExpr:
+    NOT expr { $$ = std::make_shared<NotUnOpNode>($2); }
+    | MINUS expr %prec UNARYMINUS { $$ = std::make_shared<MinusUnOpNode>($2); }
+    | ISNULL expr { $$ = std::make_shared<IsnullUnOpNode>($2); };
 
-binop-expr:
-    expr comp-op expr
-    | expr add-sub-op expr
-    | expr mul-div-op expr
-    | expr POW expr
-    | expr AND expr;
+binOpExpr:
+    expr EQUAL expr { $$ = std::make_shared<EqualBinOpNode>($1, $3); }
+    | expr LOWER expr { $$ = std::make_shared<LowerBinOpNode>($1, $3); }
+    | expr LOWER_EQUAL expr { $$ = std::make_shared<LowerOrEqualBinOpNode>($1, $3); }
+    | expr PLUS expr { $$ = std::make_shared<AddBinOpNode>($1, $3); }
+    | expr MINUS expr { $$ = std::make_shared<MinusBinOpNode>($1, $3); }
+    | expr TIMES expr { $$ = std::make_shared<MulBinOpNode>($1, $3); }
+    | expr DIV expr { $$ = std::make_shared<DivBinOpNode>($1, $3); }
+    | expr POW expr { $$ = std::make_shared<PowBinOpNode>($1, $3); }
+    | expr AND expr { $$ = std::make_shared<AndBinOpNode>($1, $3); };
 
-comp-op:
-    EQUAL
-    | LOWER
-    | LOWER_EQUAL;
+callExpr:
+    OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>($1, $3); }
+    | expr DOT OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>($3, $5, $1); };
 
-add-sub-op:
-    PLUS
-    | MINUS;
-
-mul-div-op:
-    TIMES
-    | DIV;
-
-call-expr:
-    OBJECT_IDENTIFIER LPAR expr-list RPAR
-    | expr DOT OBJECT_IDENTIFIER LPAR expr-list RPAR;
-
-new-expr:
-    NEW TYPE_IDENTIFIER;
+newExpr:
+    NEW TYPE_IDENTIFIER { $$ = std::make_shared<NewNode>($2);};
 
 literal:
-    INTEGER_LITERAL
-    | STRING_LITERAL
-    | boolean-literal;
+    INTEGER_LITERAL { $$ = std::make_shared<LiteralNode>(std::to_string($1)); }
+    | STRING_LITERAL { $$ = std::make_shared<LiteralNode>($1); }
+    | booleanLiteral { $$ = $1; };
 
-boolean-literal:
-    TRUE
-    | FALSE;
+booleanLiteral:
+    TRUE { $$ = std::make_shared<LiteralNode>("true"); }
+    | FALSE { $$ = std::make_shared<LiteralNode>("false"); };
 
 %%
 

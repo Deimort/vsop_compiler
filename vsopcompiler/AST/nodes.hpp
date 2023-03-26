@@ -5,13 +5,33 @@
 #include <memory>
 #include <sstream>
 
-class Serializer {
+class ProgramNode;
+class ClassNode;
+class ClassBodyNode;
+class FieldNode;
+class MethodNode;
+class FormalNode;
+class IfNode;
+class WhileNode;
+class LetNode;
+class AssignNode;
+class BlockNode;
+class CallNode;
+class NewNode;
+class ExprNode;
+class UnOpNode;
+class BinOpNode;
+class LiteralNode;
+
+class Serializer
+{
 public:
-    void setType(const std::string& type);
-    void addString(const std::string& str);
+    void setType(const std::string &type);
+    void addString(const std::string &str);
     void startList();
     void endList();
-    std::string serialize() const;
+    std::string serialize();
+
 private:
     bool m_hasType = false;
     bool m_hasPrevious = false;
@@ -19,386 +39,400 @@ private:
     std::stringstream m_buffer;
 };
 
-class Serializable {
+class Serializable
+{
 public:
     virtual ~Serializable() {}
     virtual std::string serialize() const = 0;
 };
 
-class ProgramNode : public Serializable {
+class ProgramNode : public Serializable
+{
 public:
-    void addClass(std::unique_ptr<ClassNode> classNode) {
-        m_classes.push_back(std::move(classNode));
-    }
+    ProgramNode(std::vector<std::shared_ptr<ClassNode>> classes)
+        : m_classes(classes) {}
 
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.startList();
-        for(auto& classNode : m_classes) {
-            serializer.addString(classNode->serialize());
-        }
-        serializer.endList();
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 private:
-    std::vector<std::unique_ptr<ClassNode>> m_classes;
+    std::vector<std::shared_ptr<ClassNode>> m_classes;
 };
 
-class ClassNode : public Serializable {
+class ClassBodyNode : public Serializable
+{
 public:
-    ClassNode(const std::string& name, const std::string& parent = "Object")
-        : m_name(name), m_parent(parent) {}
+    void addField(std::shared_ptr<FieldNode> field);
+    void addMethod(std::shared_ptr<MethodNode> method);
+    std::string serialize() const override;
 
-    void addField(std::unique_ptr<FieldNode> field) {
-        m_fields.push_back(std::move(field));
-    }
+private:
+    std::vector<std::shared_ptr<FieldNode>> m_fields;
+    std::vector<std::shared_ptr<MethodNode>> m_methods;
+};
 
-    void addMethod(std::unique_ptr<MethodNode> method) {
-        m_methods.push_back(std::move(method));
-    }
+class ClassNode : public Serializable
+{
+public:
+    ClassNode(const std::string &name, std::shared_ptr<ClassBodyNode> classBody, const std::string &parent = "Object")
+        : m_name(name), m_parent(parent), m_classBody(classBody) {}
 
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Class");
-        serializer.addString(m_name);
-        serializer.addString(m_parent);
-        serializer.startList();
-        for(auto& fieldNode : m_fields) {
-            serializer.addString(fieldNode->serialize());
-        }
-        serializer.endList();
-        serializer.startList();
-        for(auto& methodNode : m_methods) {
-            serializer.addString(methodNode->serialize());
-        }
-        serializer.endList();
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 private:
     std::string m_name;
     std::string m_parent;
-    std::vector<std::unique_ptr<FieldNode>> m_fields;
-    std::vector<std::unique_ptr<MethodNode>> m_methods;
+    std::shared_ptr<ClassBodyNode> m_classBody;
 };
 
-class FieldNode: public Serializable {
+class FieldNode : public Serializable
+{
 public:
-    FieldNode(const std::string& name, const std::string& type, const std::string& initExpr = "")
+    FieldNode(const std::string &name, const std::string &type, const std::shared_ptr<ExprNode> &initExpr = nullptr)
         : m_name(name), m_type(type), m_initExpr(initExpr) {}
 
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Field");
-        serializer.addString(m_name);
-        serializer.addString(m_type);
-        serializer.addString(m_initExpr);
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 private:
     std::string m_name;
     std::string m_type;
-    std::string m_initExpr;
+    std::shared_ptr<ExprNode> m_initExpr;
 };
 
-class MethodNode : public Serializable {
+class MethodNode : public Serializable
+{
 public:
-    MethodNode(const std::string& name, std::vector<std::unique_ptr<FormalNode>> formals,
-               const std::string& retType, std::unique_ptr<BlockNode> block)
-        : m_name(name), m_formals(std::move(formals)), m_retType(retType), m_block(std::move(block)) {}
+    MethodNode(const std::string &name, std::vector<std::shared_ptr<FormalNode>> formals,
+               const std::string &retType, std::shared_ptr<BlockNode> block)
+        : m_name(name), m_formals(formals), m_retType(retType), m_block(block) {}
 
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Method");
-        serializer.addString(m_name);
-        serializer.startList();
-        for(auto& formalNode : m_formals) {
-            serializer.addString(formalNode->serialize());
-        }
-        serializer.endList();
-        serializer.addString(m_retType);
-        serializer.addString(m_block->serialize());
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 private:
     std::string m_name;
-    std::vector<std::unique_ptr<FormalNode>> m_formals;
+    std::vector<std::shared_ptr<FormalNode>> m_formals;
     std::string m_retType;
-    std::unique_ptr<BlockNode> m_block;
+    std::shared_ptr<BlockNode> m_block;
 };
 
-class FormalNode : public Serializable {
+class FormalNode : public Serializable
+{
 public:
-    FormalNode(const std::string& name, const std::string& type)
+    FormalNode(const std::string &name, const std::string &type)
         : m_name(name), m_type(type) {}
 
-    std::string serialize() const override {
-        return m_name + " : " + m_type;
-    }
+    std::string serialize() const override;
 
 private:
     std::string m_name;
     std::string m_type;
 };
 
-class ExprNode : public Serializable {
+class ExprNode : public Serializable
+{
 };
 
-class IfNode : public ExprNode {
+class IfNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("If");
-        serializer.addString(m_condExpr->serialize());
-        serializer.addString(m_thenExpr->serialize());
-        if(m_elseExpr) {
-            serializer.addString(m_elseExpr->serialize());
-        }
-        return serializer.serialize();
-    }
+    IfNode(std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> thenExpr, std::shared_ptr<ExprNode> elseExpr = nullptr)
+        : m_condExpr(condExpr), m_thenExpr(thenExpr), m_elseExpr(elseExpr) {}
+    std::string serialize() const override;
 
 private:
-    std::unique_ptr<ExprNode> m_condExpr;
-    std::unique_ptr<ExprNode> m_thenExpr;
-    std::unique_ptr<ExprNode> m_elseExpr;
+    std::shared_ptr<ExprNode> m_condExpr;
+    std::shared_ptr<ExprNode> m_thenExpr;
+    std::shared_ptr<ExprNode> m_elseExpr;
 };
 
-class WhileNode : public ExprNode {
+class WhileNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("While");
-        serializer.addString(m_condExpr->serialize());
-        serializer.addString(m_bodyExpr->serialize());
-        return serializer.serialize();
-    }
+    WhileNode(std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> bodyExpr)
+        : m_condExpr(condExpr), m_bodyExpr(bodyExpr) {}
+    std::string serialize() const override;
 
 private:
-    std::unique_ptr<ExprNode> m_condExpr;
-    std::unique_ptr<ExprNode> m_bodyExpr;
+    std::shared_ptr<ExprNode> m_condExpr;
+    std::shared_ptr<ExprNode> m_bodyExpr;
 };
 
-class LetNode : public ExprNode {
+class LetNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Let");
-        serializer.addString(m_name);
-        serializer.addString(m_type);
-        if(m_initExpr) {
-            serializer.addString(m_initExpr->serialize());
-        }
-        serializer.addString(m_scopedExpr->serialize());
-        return serializer.serialize();
-    }
+    LetNode(const std::string &name,
+            const std::string &type, std::shared_ptr<ExprNode> scopedExpr,
+            std::shared_ptr<ExprNode> initExpr = nullptr)
+        : m_name(name), m_type(type), m_scopedExpr(scopedExpr), m_initExpr(initExpr) {}
+    std::string serialize() const override;
 
 private:
     std::string m_name;
     std::string m_type;
-    std::unique_ptr<ExprNode> m_initExpr;
-    std::unique_ptr<ExprNode> m_scopedExpr;
+    std::shared_ptr<ExprNode> m_scopedExpr;
+    std::shared_ptr<ExprNode> m_initExpr;
 };
 
-class AssignNode : public ExprNode {
+class AssignNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Assign");
-        serializer.addString(m_name);
-        serializer.addString(m_expr->serialize());
-        return serializer.serialize();
-    }
+    AssignNode(const std::string &name, std::shared_ptr<ExprNode> expr)
+        : m_name(name), m_expr(expr) {}
+    std::string serialize() const override;
 
 private:
     std::string m_name;
-    std::unique_ptr<ExprNode> m_expr;
+    std::shared_ptr<ExprNode> m_expr;
 };
 
-class AssignNode : public ExprNode {
+class UnOpNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Assign");
-        serializer.addString(m_name);
-        serializer.addString(m_expr->serialize());
-        return serializer.serialize();
-    }
+    UnOpNode(std::shared_ptr<ExprNode> expr) : m_expr(expr) {}
 
-private:
-    std::string m_name;
-    std::unique_ptr<ExprNode> m_expr;
-};
-
-class UnOpNode : public ExprNode {
-public:
-    UnOpNode(std::unique_ptr<ExprNode> expr): m_expr(std::move(expr)) {}
-
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("UnOp");
-        completeOperator(serializer);
-        serializer.addString(m_expr->serialize());
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 protected:
-    virtual void completeOperator(Serializer& serializer) const = 0;
+    virtual void completeOperator(Serializer &serializer) const = 0;
 
 private:
-    std::unique_ptr<ExprNode> m_expr;
+    std::shared_ptr<ExprNode> m_expr;
 };
 
-class NotUnOpNode : public UnOpNode {
+class NotUnOpNode : public UnOpNode
+{
+public:
+    NotUnOpNode(std::shared_ptr<ExprNode> expr) : UnOpNode(expr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("not");
     }
 };
 
-class MinusUnOpNode : public UnOpNode {
+class MinusUnOpNode : public UnOpNode
+{
+public:
+    MinusUnOpNode(std::shared_ptr<ExprNode> expr) : UnOpNode(expr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("-");
     }
 };
 
-class IsnullUnOpNode : public UnOpNode {
+class IsnullUnOpNode : public UnOpNode
+{
+public:
+    IsnullUnOpNode(std::shared_ptr<ExprNode> expr) : UnOpNode(expr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("not");
     }
 };
 
-class BinOpNode : public ExprNode {
+class BinOpNode : public ExprNode
+{
 public:
-    BinOpNode(std::unique_ptr<ExprNode> lExpr, std::unique_ptr<ExprNode> rExpr)
-        : m_lExpr(std::move(lExpr)), m_rExpr(std::move(rExpr)) {}
+    BinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : m_lExpr(lExpr), m_rExpr(rExpr) {}
 
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("BinOp");
-        completeOperator(serializer);
-        serializer.addString(m_lExpr->serialize());
-        serializer.addString(m_rExpr->serialize());
-        return serializer.serialize();
-    }
+    std::string serialize() const override;
 
 protected:
-    virtual void completeOperator(Serializer& serializer) const = 0;
+    virtual void completeOperator(Serializer &serializer) const = 0;
 
 private:
-    std::unique_ptr<ExprNode> m_lExpr;
-    std::unique_ptr<ExprNode> m_rExpr;
+    std::shared_ptr<ExprNode> m_lExpr;
+    std::shared_ptr<ExprNode> m_rExpr;
 };
 
-class AddBinOpNode : public BinOpNode {
+class AddBinOpNode : public BinOpNode
+{
+public:
+    AddBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("+");
     }
 };
 
-class MinusBinOpNode : public BinOpNode {
+class MinusBinOpNode : public BinOpNode
+{
+public:
+    MinusBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("-");
     }
 };
 
-class MultiplyBinOpNode : public BinOpNode {
+class MulBinOpNode : public BinOpNode
+{
+public:
+    MulBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("*");
     }
 };
 
-class DevideBinOpNode : public BinOpNode {
+class DivBinOpNode : public BinOpNode
+{
+public:
+    DivBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("/");
     }
 };
 
-class LessBinOpNode : public BinOpNode {
+class LowerBinOpNode : public BinOpNode
+{
+public:
+    LowerBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("<");
     }
 };
 
-class LessOrEqualBinOpNode : public BinOpNode {
+class LowerOrEqualBinOpNode : public BinOpNode
+{
+public:
+    LowerOrEqualBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("<=");
     }
 };
 
-class EqualBinOpNode : public BinOpNode {
+class EqualBinOpNode : public BinOpNode
+{
+public:
+    EqualBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("=");
     }
 };
 
-class AndBinOpNode : public BinOpNode {
+class AndBinOpNode : public BinOpNode
+{
+public:
+    AndBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
+
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("and");
     }
 };
 
-class EqualBinOpNode : public BinOpNode {
-protected:
-    void completeOperator(Serializer& serializer) const override {
-        serializer.addString("=");
-    }
-};
+class PowBinOpNode : public BinOpNode
+{
+public:
+    PowBinOpNode(std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(lExpr, rExpr) {}
 
-class PowBinOpNode : public BinOpNode {
 protected:
-    void completeOperator(Serializer& serializer) const override {
+    void completeOperator(Serializer &serializer) const override
+    {
         serializer.addString("^");
     }
 };
 
-class CallNode : public ExprNode {
+class SelfNode : public ExprNode
+{
 public:
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.setType("Call");
-        serializer.addString(m_objExpr->serialize());
-        serializer.addString(m_methodName);
-        serializer.startList();
-        for(auto& expr : m_exprList) {
-            serializer.addString(expr->serialize());
-        }
-        serializer.endList();
-        return serializer.serialize();
-    }
-private:
-    std::unique_ptr<ExprNode> m_objExpr;
-    std::string m_methodName;
-    std::vector<std::unique_ptr<ExprNode>> m_exprList;
+    std::string serialize() const override;
 };
 
-class BlockNode : public Serializable {
+class IdentifierNode : public ExprNode
+{
 public:
-    BlockNode(std::vector<std::unique_ptr<ExprNode>> expressions)
-        : m_expressions(std::move(expressions)) {}
-
-    std::string serialize() const override {
-        Serializer serializer;
-        serializer.startList();
-        for(auto& expressionNode : m_expressions) {
-            serializer.addString(expressionNode->serialize());
-        }
-        serializer.endList();
-        return serializer.serialize();
-    }
+    IdentifierNode(std::string name) : m_name(name) {}
+    std::string serialize() const override;
 
 private:
-    std::vector<std::unique_ptr<ExprNode>> m_expressions;
+    std::string m_name;
+};
+
+class UnitNode : public ExprNode
+{
+public:
+    std::string serialize() const override;
+};
+
+class CallNode : public ExprNode
+{
+public:
+    CallNode(std::string methodName,
+             std::vector<std::shared_ptr<ExprNode>> exprList,
+             std::shared_ptr<ExprNode> objExpr = std::make_shared<SelfNode>())
+        : m_methodName(methodName), m_exprList(exprList), m_objExpr(objExpr) {}
+    std::string serialize() const override;
+
+private:
+    std::string m_methodName;
+    std::vector<std::shared_ptr<ExprNode>> m_exprList;
+    std::shared_ptr<ExprNode> m_objExpr;
+};
+
+class BlockNode : public ExprNode
+{
+public:
+    BlockNode(std::vector<std::shared_ptr<ExprNode>> expressions)
+        : m_expressions(expressions) {}
+
+    std::string serialize() const override;
+
+private:
+    std::vector<std::shared_ptr<ExprNode>> m_expressions;
+};
+
+class LiteralNode : public ExprNode
+{
+public:
+    LiteralNode(std::string value) : m_value(value) {}
+    std::string serialize() const override;
+
+private:
+    std::string m_value;
+};
+
+class NewNode : public ExprNode
+{
+public:
+    NewNode(std::string typeName)
+        : m_typeName(typeName) {}
+    std::string serialize() const override;
+
+private:
+    std::string m_typeName;
 };

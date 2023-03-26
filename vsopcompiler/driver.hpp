@@ -16,6 +16,7 @@
 #include <map>
 
 #include "parser.hpp"
+#include "AST/nodes.hpp"
 
 // Give prototype of yylex() function, then declare it.
 #define YY_DECL VSOP::Parser::symbol_type yylex()
@@ -91,6 +92,11 @@ namespace VSOP
          */
         int result;
 
+        void setProgram(std::vector<std::shared_ptr<ClassNode>> classes)
+        {
+            this->program = std::shared_ptr<ProgramNode>(new ProgramNode(classes));
+        }
+
     private:
         /**
          * @brief The source file.
@@ -121,6 +127,8 @@ namespace VSOP
          * @brief Stop the lexer.
          */
         void scan_end();
+
+        std::shared_ptr<ProgramNode> program;
     };
 }
 

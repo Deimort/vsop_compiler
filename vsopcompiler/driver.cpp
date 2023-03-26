@@ -135,11 +135,11 @@ int Driver::lex()
 
         if ((Parser::token_type)token.type_get() != Parser::token::YYerror)
             print_token(token);
-        else {
+        else
+        {
             error = 1;
             break;
         }
-            
     }
 
     scan_end();
