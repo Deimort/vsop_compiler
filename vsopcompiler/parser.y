@@ -49,7 +49,7 @@
 }
 
 // Add an argument to the parser constructor
-%parse-param {VSOP::Driver &driver}
+%parse-param {VSOP::Driver &driver; int mode; }
 
 %code {
     #include "driver.hpp"
@@ -154,8 +154,8 @@ classList:
     | classList class { $$ = $1; $$.push_back($2); };
 
 class:
-    CLASS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>($2, $3); }
-    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>($2, $5, $4); };
+    CLASS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>(mode, @1, $2, $3); }
+    | CLASS TYPE_IDENTIFIER EXTENDS TYPE_IDENTIFIER classBody { $$ = std::make_shared<ClassNode>(mode, @1, $2, $5, $4); };
 
 classBody:
     LBRACE classBodyContent RBRACE { $$ = $2; };
@@ -163,14 +163,14 @@ classBody:
 classBodyContent:
     classBodyContent field { $$ = $1; $$->addField($2); }
     | classBodyContent method { $$ = $1; $$->addMethod($2); }
-    | %empty { $$ = std::make_shared<ClassBodyNode>(); };
+    | %empty { $$ = std::make_shared<ClassBodyNode>(mode); };
 
 field:
-    OBJECT_IDENTIFIER COLON type SEMICOLON { $$ = std::make_shared<FieldNode>($1, $3); }
-    | OBJECT_IDENTIFIER COLON type ASSIGN expr SEMICOLON { $$ = std::make_shared<FieldNode>($1, $3, $5); };
+    OBJECT_IDENTIFIER COLON type SEMICOLON { $$ = std::make_shared<FieldNode>(mode, $1, $3); }
+    | OBJECT_IDENTIFIER COLON type ASSIGN expr SEMICOLON { $$ = std::make_shared<FieldNode>(mode, $1, $3, $5); };
 
 method:
-    OBJECT_IDENTIFIER LPAR formals RPAR COLON type block { $$ = std::make_shared<MethodNode>($1, $3, $6, $7); };
+    OBJECT_IDENTIFIER LPAR formals RPAR COLON type block { $$ = std::make_shared<MethodNode>(mode, $1, $3, $6, $7); };
 
 type:
     TYPE_IDENTIFIER { $$ = $1; }
@@ -185,10 +185,10 @@ formals:
     | %empty { $$ = std::vector<std::shared_ptr<FormalNode>>(); };
 
 formal:
-    OBJECT_IDENTIFIER COLON type { $$ = std::make_shared<FormalNode>($1, $3); };
+    OBJECT_IDENTIFIER COLON type { $$ = std::make_shared<FormalNode>(mode, @1, $1, $3); };
 
 block:
-    LBRACE exprList RBRACE { $$ = std::make_shared<BlockNode>($2); };
+    LBRACE exprList RBRACE { $$ = std::make_shared<BlockNode>(mode, @1, $2); };
 
 exprList:
     expr { $$ = std::vector<std::shared_ptr<ExprNode>>(); $$.push_back($1); }
@@ -203,10 +203,10 @@ expr:
     | binOpExpr { $$ = $1;}
     | callExpr { $$ = $1;}
     | newExpr { $$ = $1;}
-    | OBJECT_IDENTIFIER { $$ = std::make_shared<IdentifierNode>($1); }
-    | SELF { $$ = std::make_shared<SelfNode>(); }
+    | OBJECT_IDENTIFIER { $$ = std::make_shared<IdentifierNode>(mode, @1, $1); }
+    | SELF { $$ = std::make_shared<SelfNode>(mode, @1); }
     | literal { $$ = $1; }
-    | LPAR RPAR { $$ = std::make_shared<UnitNode>(); }
+    | LPAR RPAR { $$ = std::make_shared<UnitNode>(mode, @1); }
     | LPAR expr RPAR { $$ = $2; }
     | block { $$ = $1; };
 
@@ -216,50 +216,50 @@ args:
     | %empty { $$ = std::vector<std::shared_ptr<ExprNode>>(); };
 
 ifExpr:
-    IF expr THEN expr { $$ = std::make_shared<IfNode>($2, $4); }
-    | IF expr THEN expr ELSE expr { $$ = std::make_shared<IfNode>($2, $4, $6); }
+    IF expr THEN expr { $$ = std::make_shared<IfNode>(mode, @1, $2, $4); }
+    | IF expr THEN expr ELSE expr { $$ = std::make_shared<IfNode>(mode, @1, $2, $4, $6); }
 
 whileExpr:
-    WHILE expr DO expr { $$ = std::make_shared<WhileNode>($2, $4); };
+    WHILE expr DO expr { $$ = std::make_shared<WhileNode>(mode, @1, $2, $4); };
 
 letExpr:
-    LET OBJECT_IDENTIFIER COLON type IN expr { $$ = std::make_shared<LetNode>($2, $4, $6); }
-    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr { $$ = std::make_shared<LetNode>($2, $4, $8, $6); };
+    LET OBJECT_IDENTIFIER COLON type IN expr { $$ = std::make_shared<LetNode>(mode, @1, $2, $4, $6); }
+    | LET OBJECT_IDENTIFIER COLON type ASSIGN expr IN expr { $$ = std::make_shared<LetNode>(mode, @1, $2, $4, $8, $6); };
 
 assignExpr:
-    OBJECT_IDENTIFIER ASSIGN expr { $$ = std::make_shared<AssignNode>($1, $3); };
+    OBJECT_IDENTIFIER ASSIGN expr { $$ = std::make_shared<AssignNode>(mode, @1, $1, $3); };
 
 unOpExpr:
-    NOT expr { $$ = std::make_shared<NotUnOpNode>($2); }
-    | MINUS expr %prec UNARYMINUS { $$ = std::make_shared<MinusUnOpNode>($2); }
-    | ISNULL expr { $$ = std::make_shared<IsnullUnOpNode>($2); };
+    NOT expr { $$ = std::make_shared<NotUnOpNode>(mode, @1, $2); }
+    | MINUS expr %prec UNARYMINUS { $$ = std::make_shared<MinusUnOpNode>(mode, @1, $2); }
+    | ISNULL expr { $$ = std::make_shared<IsnullUnOpNode>(mode, @1, $2); };
 
 binOpExpr:
-    expr EQUAL expr { $$ = std::make_shared<EqualBinOpNode>($1, $3); }
-    | expr LOWER expr { $$ = std::make_shared<LowerBinOpNode>($1, $3); }
-    | expr LOWER_EQUAL expr { $$ = std::make_shared<LowerOrEqualBinOpNode>($1, $3); }
-    | expr PLUS expr { $$ = std::make_shared<AddBinOpNode>($1, $3); }
-    | expr MINUS expr { $$ = std::make_shared<MinusBinOpNode>($1, $3); }
-    | expr TIMES expr { $$ = std::make_shared<MulBinOpNode>($1, $3); }
-    | expr DIV expr { $$ = std::make_shared<DivBinOpNode>($1, $3); }
-    | expr POW expr { $$ = std::make_shared<PowBinOpNode>($1, $3); }
-    | expr AND expr { $$ = std::make_shared<AndBinOpNode>($1, $3); };
+    expr EQUAL expr { $$ = std::make_shared<EqualBinOpNode>(mode, @$, $1, $3); }
+    | expr LOWER expr { $$ = std::make_shared<LowerBinOpNode>(mode, @$, $1, $3); }
+    | expr LOWER_EQUAL expr { $$ = std::make_shared<LowerOrEqualBinOpNode>(mode, @$, $1, $3); }
+    | expr PLUS expr { $$ = std::make_shared<AddBinOpNode>(mode, @$, $1, $3); }
+    | expr MINUS expr { $$ = std::make_shared<MinusBinOpNode>(mode, @$, $1, $3); }
+    | expr TIMES expr { $$ = std::make_shared<MulBinOpNode>(mode, @$, $1, $3); }
+    | expr DIV expr { $$ = std::make_shared<DivBinOpNode>(mode, @$ $1, $3); }
+    | expr POW expr { $$ = std::make_shared<PowBinOpNode>(mode, @$ $1, $3); }
+    | expr AND expr { $$ = std::make_shared<AndBinOpNode>(mode, @$ $1, $3); };
 
 callExpr:
-    OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>($1, $3); }
-    | expr DOT OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>($3, $5, $1); };
+    OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>(mode, @1, $1, $3); }
+    | expr DOT OBJECT_IDENTIFIER LPAR args RPAR { $$ = std::make_shared<CallNode>(mode, @1, $3, $5, $1); };
 
 newExpr:
-    NEW TYPE_IDENTIFIER { $$ = std::make_shared<NewNode>($2);};
+    NEW TYPE_IDENTIFIER { $$ = std::make_shared<NewNode>(mode, @1, $2);};
 
 literal:
-    INTEGER_LITERAL { $$ = std::make_shared<LiteralNode>(std::to_string($1)); }
-    | STRING_LITERAL { $$ = std::make_shared<LiteralNode>($1); }
+    INTEGER_LITERAL { $$ = std::make_shared<LiteralNode>(mode, @1, std::to_string($1)); }
+    | STRING_LITERAL { $$ = std::make_shared<LiteralNode>(mode, @1, $1); }
     | booleanLiteral { $$ = $1; };
 
 booleanLiteral:
-    TRUE { $$ = std::make_shared<LiteralNode>("true"); }
-    | FALSE { $$ = std::make_shared<LiteralNode>("false"); };
+    TRUE { $$ = std::make_shared<LiteralNode>(mode, @1, "true"); }
+    | FALSE { $$ = std::make_shared<LiteralNode>(mode, @1, "false"); };
 
 %%
 

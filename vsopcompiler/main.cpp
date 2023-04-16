@@ -9,12 +9,14 @@ using namespace std;
 enum class Mode
 {
     LEX,
-    PARSE
+    PARSE,
+    CHECK,
 };
 
 static const map<string, Mode> flag_to_mode = {
     {"-l", Mode::LEX},
     {"-p", Mode::PARSE},
+    {"-c", Mode::CHECK},
 };
 
 int main(int argc, char const *argv[])
@@ -49,21 +51,31 @@ int main(int argc, char const *argv[])
     int res;
     switch (mode)
     {
-    case Mode::LEX:
-        res = driver.lex();
+        case Mode::LEX:
+            res = driver.lex();
 
-        return res;
+            return res;
 
-    case Mode::PARSE:
-        res = driver.parse();
+        case Mode::PARSE:
+            res = driver.parse();
 
-        if (res == 0)
-        {
-            driver.printAST();
-        }
+            if (res == 0)
+            {
+                driver.printAST();
+            }
 
-        return res;
+            return res;
+        case Mode::CHECK:
+            res = driver.check();
+
+            if (res == 0)
+            {
+                res = driver.printAST();
+            }
+
+            return res;
     }
+
 
     return 0;
 }

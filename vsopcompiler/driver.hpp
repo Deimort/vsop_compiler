@@ -84,6 +84,13 @@ namespace VSOP
         int parse();
 
         /**
+         * @brief Check the types of the program.
+         *
+         * @return int 0 if no type error.
+         */
+        int check();
+
+        /**
          * @brief Print all the tokens.
          */
         void print_tokens();

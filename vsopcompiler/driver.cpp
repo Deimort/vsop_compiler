@@ -151,7 +151,21 @@ int Driver::parse()
 {
     scan_begin();
 
-    parser = new Parser(*this);
+    parser = new Parser(*this, 0);
+
+    int res = parser->parse();
+    scan_end();
+
+    delete parser;
+
+    return res;
+}
+
+int Driver::check()
+{
+    scan_begin();
+
+    parser = new Parser(*this, 1);
 
     int res = parser->parse();
     scan_end();

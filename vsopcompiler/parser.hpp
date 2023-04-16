@@ -1336,7 +1336,7 @@ switch (yykind)
     };
 
     /// Build a parser object.
-    Parser (VSOP::Driver &driver_yyarg);
+    Parser (VSOP::Driver &driver; int mode;_yyarg);
     virtual ~Parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -2370,7 +2370,7 @@ switch (yykind)
 
 
     // User arguments.
-    VSOP::Driver &driver;
+    VSOP::Driver &driver; int mode;;
 
   };
 
