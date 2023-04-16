@@ -14,9 +14,8 @@
                 "${input:filePath}"
             ],
             "stopAtEntry": true,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -43,7 +42,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/vsopcompiler",
             "environment": [],
-            "externalConsole": true,
+            "externalConsole": false,
             "MIMode": "gdb",// Replace with the name of your build task in the Makefile
         }
     ],
