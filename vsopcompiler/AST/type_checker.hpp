@@ -15,6 +15,11 @@ public:
 
     void visit(BaseNode &expr) override;
     void visit(ProgramNode &expr) override;
+    void visit(ClassNode &expr) override;
+    void visit(ClassBodyNode &expr) override;
+    void visit(FieldNode &expr) override;
+    void visit(MethodNode &expr) override;
+    void visit(FormalNode &expr) override;
 
     // Expressions
     void visit(IfNode &expr) override;
@@ -46,6 +51,7 @@ public:
 private:
     bool isPrimitive(const std::string &type) const;
     std::string parentTypeOf(const std::string &type) const;
+    std::string checkCycle(const std::string &type) const;
     std::vector<std::string> ancestorsOf(const std::string &type) const;
     std::string commonAncestor(const std::string &typeA, const std::string &typeB) const;
     bool conformsTo(const std::string &typeA, const std::string &typeB) const;

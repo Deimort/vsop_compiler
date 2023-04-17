@@ -40,8 +40,13 @@ class Visitor
 {
 public:
     virtual ~Visitor() = default;
-    virtual void visit(BaseNode &expr){/* No default behaviour here */};
+    virtual void visit(BaseNode &expr){/* No default behaviour here */}; //TODO is this still useful ?
     virtual void visit(ProgramNode &expr) = 0;
+    virtual void visit(ClassNode &expr) = 0;
+    virtual void visit(ClassBodyNode &expr) = 0;
+    virtual void visit(FieldNode &expr) = 0;
+    virtual void visit(MethodNode &expr) = 0;
+    virtual void visit(FormalNode &expr) = 0;
 
     // Expressions
     virtual void visit(IfNode &expr) = 0;

@@ -7,7 +7,33 @@ void TypeCheckerVisitor::visit(BaseNode &expr) {}
 
 void TypeCheckerVisitor::visit(ProgramNode &expr)
 {
+    for (auto &classNode : expr.getClasses()) {
+        classNode->accept(*this);
+    }
 }
+
+void TypeCheckerVisitor::visit(ClassNode &expr) {
+    checkCycle(expr.getName());
+    expr.getBody()->accept(*this);
+}
+
+void TypeCheckerVisitor::visit(ClassBodyNode &expr) {
+    // Visit all fields and methods in the class body
+    m_vTable.enter_scope();
+    m_fTable.enter_scope();
+    for (auto &node : expr.getFields()) {
+        node->accept(*this);
+    }
+    for (auto &node : expr.getMethods()) {
+        node->accept(*this);
+    }
+    m_vTable.exit_scope();
+    m_fTable.exit_scope();
+}
+
+void TypeCheckerVisitor::visit(FieldNode &expr) {}
+void TypeCheckerVisitor::visit(MethodNode &expr) {}
+void TypeCheckerVisitor::visit(FormalNode &expr) {}
 
 // ==================== Expressions ====================
 
@@ -169,6 +195,11 @@ bool TypeCheckerVisitor::isPrimitive(const std::string &type) const
 
 std::string TypeCheckerVisitor::parentTypeOf(const std::string &type) const
 {
+    if (type == "Object") 
+    {
+        return "";
+    }
+
     for (const auto &classNode : m_ast.getClasses())
     {
         if (classNode->getName() == type)
@@ -177,8 +208,21 @@ std::string TypeCheckerVisitor::parentTypeOf(const std::string &type) const
         }
     }
 
-    // If the type is not found in any class, return an empty string
-    return "";
+    // If the type is not found in any class, throw error
+    throw SemanticException("Type : " + type + " is undefined");
+}
+
+std::string TypeCheckerVisitor::checkCycle(const std::string &type) const 
+{
+    std::string parent = parentTypeOf(type);
+    while (!parent.empty())
+    {
+        if (parent == type) 
+        {
+            throw SemanticException("Type : " + type + " is involeved in a cycle");
+        }
+        parent = parentTypeOf(parent);
+    }
 }
 
 std::vector<std::string> TypeCheckerVisitor::ancestorsOf(const std::string &type) const

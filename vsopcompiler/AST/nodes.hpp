@@ -98,6 +98,8 @@ public:
     using BaseNode::BaseNode;
     void addField(std::shared_ptr<FieldNode> field);
     void addMethod(std::shared_ptr<MethodNode> method);
+    std::vector<std::shared_ptr<FieldNode>> getFields() { return m_fields; }
+    std::vector<std::shared_ptr<MethodNode>> getMethods() { return m_methods; }
     std::string serialize() const override;
 
 private:
@@ -113,6 +115,7 @@ public:
 
     std::string getName() const { return m_name; }
     std::string getParent() const { return m_parent; }
+    std::shared_ptr<ClassBodyNode> getBody() const { return m_classBody; }
     std::string serialize() const override;
 
 private:
