@@ -1,6 +1,6 @@
 #pragma once
 
-#include "nodes.hpp"
+#include "visitable.hpp"
 
 class BaseNode;
 class ProgramNode;

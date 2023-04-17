@@ -8,50 +8,6 @@
 #include "../location.hh"
 #include "visitor.hpp"
 
-class Visitable;
-class Visitor;
-
-class BaseNode;
-class ProgramNode;
-class ClassNode;
-class ClassBodyNode;
-class FieldNode;
-class MethodNode;
-class FormalNode;
-class IfNode;
-class WhileNode;
-class LetNode;
-class AssignNode;
-class BlockNode;
-class CallNode;
-class NewNode;
-class ExprNode;
-class UnOpNode;
-class NotUnOpNode;
-class MinusUnOpNode;
-class IsnullUnOpNode;
-class BinOpNode;
-class AddBinOpNode;
-class MinusBinOpNode;
-class MulBinOpNode;
-class DivBinOpNode;
-class LowerBinOpNode;
-class LowerOrEqualBinOpNode;
-class EqualBinOpNode;
-class AndBinOpNode;
-class PowBinOpNode;
-class SelfNode;
-class IdentifierNode;
-class UnitNode;
-class LiteralNode;
-
-class Visitable
-{
-public:
-    virtual void accept(Visitor &visitor) = 0;
-    virtual ~Visitable() = default;
-};
-
 class Serializer
 {
 public:
