@@ -42,5 +42,24 @@
         "unordered_map": "cpp",
         "functional": "cpp",
         "set": "cpp"
-    }
+    },
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/workspaces/cpl_project/vsopcompiler",
+            "binaryPath": "/workspaces/cpl_project/vsopcompiler/vsopc",
+            "binaryArgs": []
+        }
+    ],
+    "makefile.configurations": [
+        {
+            "name": "VSOP",
+            "makeDirectory": "vsopcompiler/",
+            "problemMatchers": [
+                "$gcc",
+                "$msvc"
+            ],
+        }
+    ],
+    "makefile.compileCommandsPath": ".vscode/compile_commands.json",
+    "sonarlint.pathToCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
 }

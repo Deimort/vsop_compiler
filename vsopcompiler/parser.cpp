@@ -143,14 +143,14 @@ namespace VSOP {
 #line 144 "parser.cpp"
 
   /// Build a parser object.
-  Parser::Parser (VSOP::Driver &driver; int mode;_yyarg)
+  Parser::Parser (VSOP::Driver &driver_yyarg)
 #if YYDEBUG
     : yydebug_ (false),
       yycdebug_ (&std::cerr),
 #else
     :
 #endif
-      mode (mode_yyarg)
+      driver (driver_yyarg)
   {}
 
   Parser::~Parser ()
@@ -988,13 +988,13 @@ namespace VSOP {
             {
   case 2: // program: classList
 #line 150 "parser.y"
-                   { yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > () = yystack_[0].value.as < std::vector<std::shared_ptr<ClassNode>> > (); driver.setProgram(yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > ()); driver.result = 0; }
+                   { yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > () = yystack_[0].value.as < std::vector<std::shared_ptr<ClassNode>> > (); driver.setProgram(yylhs.location, yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > ()); driver.result = 0; }
 #line 993 "parser.cpp"
     break;
 
   case 3: // classList: class
 #line 153 "parser.y"
-          { yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > () = std::vector<std::shared_ptr<ClassNode>>(mode); yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ClassNode> > ()); }
+          { yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > () = std::vector<std::shared_ptr<ClassNode>>(); yylhs.value.as < std::vector<std::shared_ptr<ClassNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ClassNode> > ()); }
 #line 999 "parser.cpp"
     break;
 
@@ -1006,13 +1006,13 @@ namespace VSOP {
 
   case 5: // class: "class" "type-identifier" classBody
 #line 157 "parser.y"
-                                    { yylhs.value.as < std::shared_ptr<ClassNode> > () = std::make_shared<ClassNode>(mode, yystack_[1].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ClassBodyNode> > ()); }
+                                    { yylhs.value.as < std::shared_ptr<ClassNode> > () = std::make_shared<ClassNode>(yystack_[2].location, yystack_[1].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ClassBodyNode> > ()); }
 #line 1011 "parser.cpp"
     break;
 
   case 6: // class: "class" "type-identifier" "extends" "type-identifier" classBody
 #line 158 "parser.y"
-                                                              { yylhs.value.as < std::shared_ptr<ClassNode> > () = std::make_shared<ClassNode>(mode, yystack_[3].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ClassBodyNode> > (), yystack_[1].value.as < std::string > ()); }
+                                                              { yylhs.value.as < std::shared_ptr<ClassNode> > () = std::make_shared<ClassNode>(yystack_[4].location, yystack_[3].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ClassBodyNode> > (), yystack_[1].value.as < std::string > ()); }
 #line 1017 "parser.cpp"
     break;
 
@@ -1036,25 +1036,25 @@ namespace VSOP {
 
   case 10: // classBodyContent: %empty
 #line 166 "parser.y"
-             { yylhs.value.as < std::shared_ptr<ClassBodyNode> > () = std::make_shared<ClassBodyNode>(mode); }
+             { yylhs.value.as < std::shared_ptr<ClassBodyNode> > () = std::make_shared<ClassBodyNode>(yylhs.location); }
 #line 1041 "parser.cpp"
     break;
 
   case 11: // field: "object-identifier" ":" type ";"
 #line 169 "parser.y"
-                                           { yylhs.value.as < std::shared_ptr<FieldNode> > () = std::make_shared<FieldNode>(mode, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > ()); }
+                                           { yylhs.value.as < std::shared_ptr<FieldNode> > () = std::make_shared<FieldNode>(yystack_[3].location, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::string > ()); }
 #line 1047 "parser.cpp"
     break;
 
   case 12: // field: "object-identifier" ":" type "<-" expr ";"
 #line 170 "parser.y"
-                                                         { yylhs.value.as < std::shared_ptr<FieldNode> > () = std::make_shared<FieldNode>(mode, yystack_[5].value.as < std::string > (), yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::shared_ptr<ExprNode> > ()); }
+                                                         { yylhs.value.as < std::shared_ptr<FieldNode> > () = std::make_shared<FieldNode>(yystack_[5].location, yystack_[5].value.as < std::string > (), yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1053 "parser.cpp"
     break;
 
   case 13: // method: "object-identifier" "(" formals ")" ":" type block
 #line 173 "parser.y"
-                                                         { yylhs.value.as < std::shared_ptr<MethodNode> > () = std::make_shared<MethodNode>(mode, yystack_[6].value.as < std::string > (), yystack_[4].value.as < std::vector<std::shared_ptr<FormalNode>> > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<BlockNode> > ()); }
+                                                         { yylhs.value.as < std::shared_ptr<MethodNode> > () = std::make_shared<MethodNode>(yystack_[6].location, yystack_[6].value.as < std::string > (), yystack_[4].value.as < std::vector<std::shared_ptr<FormalNode>> > (), yystack_[1].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<BlockNode> > ()); }
 #line 1059 "parser.cpp"
     break;
 
@@ -1096,31 +1096,31 @@ namespace VSOP {
 
   case 20: // formals: formal
 #line 184 "parser.y"
-             { yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > () = std::vector<std::shared_ptr<FormalNode>>(mode); yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<FormalNode> > ()); }
+             { yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > () = std::vector<std::shared_ptr<FormalNode>>(); yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<FormalNode> > ()); }
 #line 1101 "parser.cpp"
     break;
 
   case 21: // formals: %empty
 #line 185 "parser.y"
-             { yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > () = std::vector<std::shared_ptr<FormalNode>>(mode); }
+             { yylhs.value.as < std::vector<std::shared_ptr<FormalNode>> > () = std::vector<std::shared_ptr<FormalNode>>(); }
 #line 1107 "parser.cpp"
     break;
 
   case 22: // formal: "object-identifier" ":" type
 #line 188 "parser.y"
-                                 { yylhs.value.as < std::shared_ptr<FormalNode> > () = std::make_shared<FormalNode>(mode, yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::string > ()); }
+                                 { yylhs.value.as < std::shared_ptr<FormalNode> > () = std::make_shared<FormalNode>(yystack_[2].location, yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::string > ()); }
 #line 1113 "parser.cpp"
     break;
 
   case 23: // block: "{" exprList "}"
 #line 191 "parser.y"
-                           { yylhs.value.as < std::shared_ptr<BlockNode> > () = std::make_shared<BlockNode>(mode, yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > ()); }
+                           { yylhs.value.as < std::shared_ptr<BlockNode> > () = std::make_shared<BlockNode>(yystack_[2].location, yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > ()); }
 #line 1119 "parser.cpp"
     break;
 
   case 24: // exprList: expr
 #line 194 "parser.y"
-         { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(mode); yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+         { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(); yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1125 "parser.cpp"
     break;
 
@@ -1180,13 +1180,13 @@ namespace VSOP {
 
   case 34: // expr: "object-identifier"
 #line 206 "parser.y"
-                        { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<IdentifierNode>(mode, yystack_[0].value.as < std::string > ()); }
+                        { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<IdentifierNode>(yystack_[0].location, yystack_[0].value.as < std::string > ()); }
 #line 1185 "parser.cpp"
     break;
 
   case 35: // expr: "self"
 #line 207 "parser.y"
-           { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<SelfNode>(mode); }
+           { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<SelfNode>(yystack_[0].location); }
 #line 1191 "parser.cpp"
     break;
 
@@ -1198,7 +1198,7 @@ namespace VSOP {
 
   case 37: // expr: "(" ")"
 #line 209 "parser.y"
-                { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<UnitNode>(mode); }
+                { yylhs.value.as < std::shared_ptr<ExprNode> > () = std::make_shared<UnitNode>(yystack_[1].location); }
 #line 1203 "parser.cpp"
     break;
 
@@ -1216,7 +1216,7 @@ namespace VSOP {
 
   case 40: // args: expr
 #line 214 "parser.y"
-         { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(mode); yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+         { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(); yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > ().push_back(yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1221 "parser.cpp"
     break;
 
@@ -1228,145 +1228,145 @@ namespace VSOP {
 
   case 42: // args: %empty
 #line 216 "parser.y"
-             { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(mode); }
+             { yylhs.value.as < std::vector<std::shared_ptr<ExprNode>> > () = std::vector<std::shared_ptr<ExprNode>>(); }
 #line 1233 "parser.cpp"
     break;
 
   case 43: // ifExpr: "if" expr "then" expr
 #line 219 "parser.y"
-                      { yylhs.value.as < std::shared_ptr<IfNode> > () = std::make_shared<IfNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                      { yylhs.value.as < std::shared_ptr<IfNode> > () = std::make_shared<IfNode>(yystack_[3].location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1239 "parser.cpp"
     break;
 
   case 44: // ifExpr: "if" expr "then" expr "else" expr
 #line 220 "parser.y"
-                                  { yylhs.value.as < std::shared_ptr<IfNode> > () = std::make_shared<IfNode>(mode, yystack_[4].value.as < std::shared_ptr<ExprNode> > (), yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                                  { yylhs.value.as < std::shared_ptr<IfNode> > () = std::make_shared<IfNode>(yystack_[5].location, yystack_[4].value.as < std::shared_ptr<ExprNode> > (), yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1245 "parser.cpp"
     break;
 
   case 45: // whileExpr: "while" expr "do" expr
 #line 223 "parser.y"
-                       { yylhs.value.as < std::shared_ptr<WhileNode> > () = std::make_shared<WhileNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                       { yylhs.value.as < std::shared_ptr<WhileNode> > () = std::make_shared<WhileNode>(yystack_[3].location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1251 "parser.cpp"
     break;
 
   case 46: // letExpr: "let" "object-identifier" ":" type "in" expr
 #line 226 "parser.y"
-                                             { yylhs.value.as < std::shared_ptr<LetNode> > () = std::make_shared<LetNode>(mode, yystack_[4].value.as < std::string > (), yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                                             { yylhs.value.as < std::shared_ptr<LetNode> > () = std::make_shared<LetNode>(yystack_[5].location, yystack_[4].value.as < std::string > (), yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1257 "parser.cpp"
     break;
 
   case 47: // letExpr: "let" "object-identifier" ":" type "<-" expr "in" expr
 #line 227 "parser.y"
-                                                           { yylhs.value.as < std::shared_ptr<LetNode> > () = std::make_shared<LetNode>(mode, yystack_[6].value.as < std::string > (), yystack_[4].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > (), yystack_[2].value.as < std::shared_ptr<ExprNode> > ()); }
+                                                           { yylhs.value.as < std::shared_ptr<LetNode> > () = std::make_shared<LetNode>(yystack_[7].location, yystack_[6].value.as < std::string > (), yystack_[4].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > (), yystack_[2].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1263 "parser.cpp"
     break;
 
   case 48: // assignExpr: "object-identifier" "<-" expr
 #line 230 "parser.y"
-                                  { yylhs.value.as < std::shared_ptr<AssignNode> > () = std::make_shared<AssignNode>(mode, yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                                  { yylhs.value.as < std::shared_ptr<AssignNode> > () = std::make_shared<AssignNode>(yystack_[2].location, yystack_[2].value.as < std::string > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1269 "parser.cpp"
     break;
 
   case 49: // unOpExpr: "not" expr
 #line 233 "parser.y"
-             { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<NotUnOpNode>(mode, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+             { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<NotUnOpNode>(yystack_[1].location, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1275 "parser.cpp"
     break;
 
   case 50: // unOpExpr: "-" expr
 #line 234 "parser.y"
-                                  { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<MinusUnOpNode>(mode, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                                  { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<MinusUnOpNode>(yystack_[1].location, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1281 "parser.cpp"
     break;
 
   case 51: // unOpExpr: "isnull" expr
 #line 235 "parser.y"
-                  { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<IsnullUnOpNode>(mode, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                  { yylhs.value.as < std::shared_ptr<UnOpNode> > () = std::make_shared<IsnullUnOpNode>(yystack_[1].location, yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1287 "parser.cpp"
     break;
 
   case 52: // binOpExpr: expr "=" expr
 #line 238 "parser.y"
-                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<EqualBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<EqualBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1293 "parser.cpp"
     break;
 
   case 53: // binOpExpr: expr "<" expr
 #line 239 "parser.y"
-                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<LowerBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<LowerBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1299 "parser.cpp"
     break;
 
   case 54: // binOpExpr: expr "<=" expr
 #line 240 "parser.y"
-                            { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<LowerOrEqualBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                            { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<LowerOrEqualBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1305 "parser.cpp"
     break;
 
   case 55: // binOpExpr: expr "+" expr
 #line 241 "parser.y"
-                     { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<AddBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                     { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<AddBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1311 "parser.cpp"
     break;
 
   case 56: // binOpExpr: expr "-" expr
 #line 242 "parser.y"
-                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<MinusBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<MinusBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1317 "parser.cpp"
     break;
 
   case 57: // binOpExpr: expr "*" expr
 #line 243 "parser.y"
-                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<MulBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                      { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<MulBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1323 "parser.cpp"
     break;
 
   case 58: // binOpExpr: expr "/" expr
 #line 244 "parser.y"
-                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<DivBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<DivBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1329 "parser.cpp"
     break;
 
   case 59: // binOpExpr: expr "^" expr
 #line 245 "parser.y"
-                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<PowBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<PowBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1335 "parser.cpp"
     break;
 
   case 60: // binOpExpr: expr "and" expr
 #line 246 "parser.y"
-                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<AndBinOpNode>(mode, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
+                    { yylhs.value.as < std::shared_ptr<BinOpNode> > () = std::make_shared<AndBinOpNode>(yylhs.location, yystack_[2].value.as < std::shared_ptr<ExprNode> > (), yystack_[0].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1341 "parser.cpp"
     break;
 
   case 61: // callExpr: "object-identifier" "(" args ")"
 #line 249 "parser.y"
-                                     { yylhs.value.as < std::shared_ptr<CallNode> > () = std::make_shared<CallNode>(mode, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > ()); }
+                                     { yylhs.value.as < std::shared_ptr<CallNode> > () = std::make_shared<CallNode>(yystack_[3].location, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > ()); }
 #line 1347 "parser.cpp"
     break;
 
   case 62: // callExpr: expr "." "object-identifier" "(" args ")"
 #line 250 "parser.y"
-                                                { yylhs.value.as < std::shared_ptr<CallNode> > () = std::make_shared<CallNode>(mode, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > (), yystack_[5].value.as < std::shared_ptr<ExprNode> > ()); }
+                                                { yylhs.value.as < std::shared_ptr<CallNode> > () = std::make_shared<CallNode>(yystack_[5].location, yystack_[3].value.as < std::string > (), yystack_[1].value.as < std::vector<std::shared_ptr<ExprNode>> > (), yystack_[5].value.as < std::shared_ptr<ExprNode> > ()); }
 #line 1353 "parser.cpp"
     break;
 
   case 63: // newExpr: "new" "type-identifier"
 #line 253 "parser.y"
-                        { yylhs.value.as < std::shared_ptr<NewNode> > () = std::make_shared<NewNode>(mode, yystack_[0].value.as < std::string > ());}
+                        { yylhs.value.as < std::shared_ptr<NewNode> > () = std::make_shared<NewNode>(yystack_[1].location, yystack_[0].value.as < std::string > ());}
 #line 1359 "parser.cpp"
     break;
 
   case 64: // literal: "integer-literal"
 #line 256 "parser.y"
-                    { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(mode, std::to_string(yystack_[0].value.as < int > ())); }
+                    { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(yystack_[0].location, std::to_string(yystack_[0].value.as < int > ()), "int32"); }
 #line 1365 "parser.cpp"
     break;
 
   case 65: // literal: "string-literal"
 #line 257 "parser.y"
-                     { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(mode, yystack_[0].value.as < std::string > ()); }
+                     { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(yystack_[0].location, yystack_[0].value.as < std::string > (), "string"); }
 #line 1371 "parser.cpp"
     break;
 
@@ -1378,13 +1378,13 @@ namespace VSOP {
 
   case 67: // booleanLiteral: "true"
 #line 261 "parser.y"
-         { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(mode, "true"); }
+         { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(yystack_[0].location, "true", "bool"); }
 #line 1383 "parser.cpp"
     break;
 
   case 68: // booleanLiteral: "false"
 #line 262 "parser.y"
-            { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(mode, "false"); }
+            { yylhs.value.as < std::shared_ptr<LiteralNode> > () = std::make_shared<LiteralNode>(yystack_[0].location, "false", "bool"); }
 #line 1389 "parser.cpp"
     break;
 

@@ -7,7 +7,9 @@
 
 #include "../location.hh"
 #include "visitor.hpp"
+#include "visitable.hpp"
 
+class BaseNode;
 class ProgramNode;
 class ClassNode;
 class ClassBodyNode;
@@ -23,8 +25,26 @@ class CallNode;
 class NewNode;
 class ExprNode;
 class UnOpNode;
+class NotUnOpNode;
+class MinusUnOpNode;
+class IsnullUnOpNode;
 class BinOpNode;
+class AddBinOpNode;
+class MinusBinOpNode;
+class MulBinOpNode;
+class DivBinOpNode;
+class LowerBinOpNode;
+class LowerOrEqualBinOpNode;
+class EqualBinOpNode;
+class AndBinOpNode;
+class PowBinOpNode;
+class SelfNode;
+class IdentifierNode;
+class UnitNode;
 class LiteralNode;
+
+class Visitor;
+class Visitable;
 
 class Serializer
 {
@@ -45,19 +65,25 @@ private:
 class Serializable
 {
 public:
-    Serializable(const int mode = 0, location loc) : m_mode(mode), m_loc(loc) {}
-    virtual ~Serializable() {}
+    virtual ~Serializable() = default;
     virtual std::string serialize() const = 0;
-private:
-    int m_mode;
-    location m_loc;
 };
 
-class ProgramNode : public Serializable
+class BaseNode : public Visitable, public Serializable
 {
 public:
-    ProgramNode(int mode, location loc, std::vector<std::shared_ptr<ClassNode>> classes)
-        : Serializable(mode, loc), m_classes(classes) {}
+    explicit BaseNode(const VSOP::location &loc) : m_loc(loc) {}
+    void accept(Visitor &visitor) override { visitor.visit(*this); }
+
+private:
+    VSOP::location m_loc;
+};
+
+class ProgramNode : public BaseNode
+{
+public:
+    ProgramNode(const VSOP::location &loc, const std::vector<std::shared_ptr<ClassNode>> &classes)
+        : BaseNode(loc), m_classes(classes) {}
 
     std::vector<std::shared_ptr<ClassNode>> getClasses() const { return m_classes; }
     std::string serialize() const override;
@@ -66,9 +92,10 @@ private:
     std::vector<std::shared_ptr<ClassNode>> m_classes;
 };
 
-class ClassBodyNode : public Serializable
+class ClassBodyNode : public BaseNode
 {
 public:
+    using BaseNode::BaseNode;
     void addField(std::shared_ptr<FieldNode> field);
     void addMethod(std::shared_ptr<MethodNode> method);
     std::string serialize() const override;
@@ -78,11 +105,11 @@ private:
     std::vector<std::shared_ptr<MethodNode>> m_methods;
 };
 
-class ClassNode : public Serializable
+class ClassNode : public BaseNode
 {
 public:
-    ClassNode(const int mode, location loc, const std::string &name, std::shared_ptr<ClassBodyNode> classBody, const std::string &parent = "Object")
-        : Serializable(mode, loc), m_name(name), m_parent(parent), m_classBody(classBody) {}
+    ClassNode(const VSOP::location &loc, const std::string &name, std::shared_ptr<ClassBodyNode> classBody, const std::string &parent = "Object")
+        : BaseNode(loc), m_name(name), m_parent(parent), m_classBody(classBody) {}
 
     std::string getName() const { return m_name; }
     std::string getParent() const { return m_parent; }
@@ -94,11 +121,11 @@ private:
     std::shared_ptr<ClassBodyNode> m_classBody;
 };
 
-class FieldNode : public Serializable
+class FieldNode : public BaseNode
 {
 public:
-    FieldNode(const int mode, location loc, const std::string &name, const std::string &type, const std::shared_ptr<ExprNode> &initExpr = nullptr)
-        : Serializable(mode, loc), m_name(name), m_type(type), m_initExpr(initExpr) {}
+    FieldNode(const VSOP::location &loc, const std::string &name, const std::string &type, const std::shared_ptr<ExprNode> &initExpr = nullptr)
+        : BaseNode(loc), m_name(name), m_type(type), m_initExpr(initExpr) {}
 
     std::string serialize() const override;
 
@@ -108,12 +135,12 @@ private:
     std::shared_ptr<ExprNode> m_initExpr;
 };
 
-class MethodNode : public Serializable
+class MethodNode : public BaseNode
 {
 public:
-    MethodNode(const int mode, location loc, const std::string &name, std::vector<std::shared_ptr<FormalNode>> formals,
+    MethodNode(const VSOP::location &loc, const std::string &name, const std::vector<std::shared_ptr<FormalNode>> &formals,
                const std::string &retType, std::shared_ptr<BlockNode> block)
-        : Serializable(mode, loc), m_name(name), m_formals(formals), m_retType(retType), m_block(block) {}
+        : BaseNode(loc), m_name(name), m_formals(formals), m_retType(retType), m_block(block) {}
 
     std::string serialize() const override;
 
@@ -124,11 +151,11 @@ private:
     std::shared_ptr<BlockNode> m_block;
 };
 
-class FormalNode : public Serializable
+class FormalNode : public BaseNode
 {
 public:
-    FormalNode(const int mode, location loc, const std::string &name, const std::string &type)
-        : Serializable(mode, loc), m_name(name), m_type(type) {}
+    FormalNode(const VSOP::location &loc, const std::string &name, const std::string &type)
+        : BaseNode(loc), m_name(name), m_type(type) {}
 
     std::string serialize() const override;
 
@@ -137,13 +164,12 @@ private:
     std::string m_type;
 };
 
-class ExprNode : public Serializable, public Visitable
+class ExprNode : public BaseNode
 {
 public:
-    ExprNode(const int mode, location loc) : Serializable(mode, loc) {}
-    const std::string get_ret_type() const { return m_ret_type; }
+    using BaseNode::BaseNode;
+    std::string get_ret_type() const { return m_ret_type; }
     void set_ret_type(const std::string &type) { m_ret_type = type; }
-    virtual void accept(Visitor& visitor);
 
 private:
     std::string m_ret_type;
@@ -152,14 +178,13 @@ private:
 class IfNode : public ExprNode
 {
 public:
-    IfNode(const int mode, location loc, std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> thenExpr, std::shared_ptr<ExprNode> elseExpr = nullptr)
-        : ExprNode(mode, loc), m_condExpr(condExpr), m_thenExpr(thenExpr), m_elseExpr(elseExpr) {}
+    IfNode(const VSOP::location &loc, std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> thenExpr, std::shared_ptr<ExprNode> elseExpr = nullptr)
+        : ExprNode(loc), m_condExpr(condExpr), m_thenExpr(thenExpr), m_elseExpr(elseExpr) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
-    
-    std::shared_ptr<ExprNode> get_condExpr() { return m_condExpr; }
-    std::shared_ptr<ExprNode> get_thenExpr() { return m_thenExpr; }
-    std::shared_ptr<ExprNode> get_elseExpr() { return m_elseExpr; }
+
+    std::shared_ptr<ExprNode> get_condExpr() const { return m_condExpr; }
+    std::shared_ptr<ExprNode> get_thenExpr() const { return m_thenExpr; }
+    std::shared_ptr<ExprNode> get_elseExpr() const { return m_elseExpr; }
 
 private:
     std::shared_ptr<ExprNode> m_condExpr;
@@ -170,13 +195,12 @@ private:
 class WhileNode : public ExprNode
 {
 public:
-    WhileNode(const int mode, location loc, std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> bodyExpr)
-        : ExprNode(mode, loc), m_condExpr(condExpr), m_bodyExpr(bodyExpr) {}
+    WhileNode(const VSOP::location &loc, std::shared_ptr<ExprNode> condExpr, std::shared_ptr<ExprNode> bodyExpr)
+        : ExprNode(loc), m_condExpr(condExpr), m_bodyExpr(bodyExpr) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
-    std::shared_ptr<ExprNode> get_condExpr() { return m_condExpr; }
-    std::shared_ptr<ExprNode> get_bodyExpr() { return m_bodyExpr; }
+    std::shared_ptr<ExprNode> get_condExpr() const { return m_condExpr; }
+    std::shared_ptr<ExprNode> get_bodyExpr() const { return m_bodyExpr; }
 
 private:
     std::shared_ptr<ExprNode> m_condExpr;
@@ -186,14 +210,12 @@ private:
 class LetNode : public ExprNode
 {
 public:
-    LetNode(const int mode, location loc, const std::string &name,
+    LetNode(const VSOP::location &loc, const std::string &name,
             const std::string &type, std::shared_ptr<ExprNode> scopedExpr,
             std::shared_ptr<ExprNode> initExpr = nullptr)
-        : ExprNode(mode, loc), m_name(name), m_type(type), m_scopedExpr(scopedExpr), m_initExpr(initExpr) {}
+        : ExprNode(loc), m_name(name), m_type(type), m_scopedExpr(scopedExpr), m_initExpr(initExpr) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
-    std::shared_ptr<ExprNode> get_scopedExpr() const { return m_scopedExpr; }
     std::shared_ptr<ExprNode> get_initExpr() const { return m_initExpr; }
     std::string get_type() const { return m_type; }
     std::string get_name() const { return m_name; }
@@ -208,10 +230,9 @@ private:
 class AssignNode : public ExprNode
 {
 public:
-    AssignNode(const int mode, location loc, const std::string &name, std::shared_ptr<ExprNode> expr)
-        : ExprNode(mode, loc), m_name(name), m_expr(expr) {}
+    AssignNode(const VSOP::location &loc, const std::string &name, std::shared_ptr<ExprNode> expr)
+        : ExprNode(loc), m_name(name), m_expr(expr) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
 private:
     std::string m_name;
@@ -221,7 +242,7 @@ private:
 class UnOpNode : public ExprNode
 {
 public:
-    UnOpNode(const int mode, location loc, std::shared_ptr<ExprNode> expr) : ExprNode(mode, loc), m_expr(expr) {}
+    UnOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> expr) : ExprNode(loc), m_expr(expr) {}
 
     std::string serialize() const override;
 
@@ -235,8 +256,7 @@ private:
 class NotUnOpNode : public UnOpNode
 {
 public:
-    NotUnOpNode(const int mode, location loc, std::shared_ptr<ExprNode> expr) : UnOpNode(mode, loc, expr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    NotUnOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> expr) : UnOpNode(loc, expr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -248,8 +268,7 @@ protected:
 class MinusUnOpNode : public UnOpNode
 {
 public:
-    MinusUnOpNode(const int mode, location loc, std::shared_ptr<ExprNode> expr) : UnOpNode(mode, loc, expr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    MinusUnOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> expr) : UnOpNode(loc, expr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -261,8 +280,7 @@ protected:
 class IsnullUnOpNode : public UnOpNode
 {
 public:
-    IsnullUnOpNode(const int mode, location loc, std::shared_ptr<ExprNode> expr) : UnOpNode(mode, loc, expr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    IsnullUnOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> expr) : UnOpNode(loc, expr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -274,8 +292,8 @@ protected:
 class BinOpNode : public ExprNode
 {
 public:
-    BinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : ExprNode(mode, loc), m_lExpr(lExpr), m_rExpr(rExpr) {}
+    BinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : ExprNode(loc), m_lExpr(lExpr), m_rExpr(rExpr) {}
 
     std::string serialize() const override;
 
@@ -290,9 +308,8 @@ private:
 class AddBinOpNode : public BinOpNode
 {
 public:
-    AddBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    AddBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -304,9 +321,8 @@ protected:
 class MinusBinOpNode : public BinOpNode
 {
 public:
-    MinusBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    MinusBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -318,9 +334,8 @@ protected:
 class MulBinOpNode : public BinOpNode
 {
 public:
-    MulBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    MulBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -332,9 +347,8 @@ protected:
 class DivBinOpNode : public BinOpNode
 {
 public:
-    DivBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    DivBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -346,9 +360,8 @@ protected:
 class LowerBinOpNode : public BinOpNode
 {
 public:
-    LowerBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, lo lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    LowerBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -360,9 +373,8 @@ protected:
 class LowerOrEqualBinOpNode : public BinOpNode
 {
 public:
-    LowerOrEqualBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    LowerOrEqualBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -374,9 +386,8 @@ protected:
 class EqualBinOpNode : public BinOpNode
 {
 public:
-    EqualBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    EqualBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -388,9 +399,8 @@ protected:
 class AndBinOpNode : public BinOpNode
 {
 public:
-    AndBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    AndBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -402,9 +412,8 @@ protected:
 class PowBinOpNode : public BinOpNode
 {
 public:
-    PowBinOpNode(const int mode, location loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
-        : BinOpNode(mode, loc, lExpr, rExpr) {}
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
+    PowBinOpNode(const VSOP::location &loc, std::shared_ptr<ExprNode> lExpr, std::shared_ptr<ExprNode> rExpr)
+        : BinOpNode(loc, lExpr, rExpr) {}
 
 protected:
     void completeOperator(Serializer &serializer) const override
@@ -416,17 +425,15 @@ protected:
 class SelfNode : public ExprNode
 {
 public:
-    SelfNode(const int mode, location loc) : ExprNode(mode, loc) {}
+    using ExprNode::ExprNode;
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 };
 
 class IdentifierNode : public ExprNode
 {
 public:
-    IdentifierNode(const int mode, location loc, std::string name) : ExprNode(mode, loc), m_name(name) {}
+    IdentifierNode(const VSOP::location &loc, const std::string &name) : ExprNode(loc), m_name(name) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
 private:
     std::string m_name;
@@ -435,20 +442,24 @@ private:
 class UnitNode : public ExprNode
 {
 public:
-    UnitNode(const int mode, location loc) : ExprNode(mode, loc) {}
+    using ExprNode::ExprNode;
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 };
 
 class CallNode : public ExprNode
 {
 public:
-    CallNode(const int mode, location loc, std::string methodName,
-             std::vector<std::shared_ptr<ExprNode>> exprList,
-             std::shared_ptr<ExprNode> objExpr = std::make_shared<SelfNode>())
-        : ExprNode(mode, loc), m_methodName(methodName), m_exprList(exprList), m_objExpr(objExpr) {}
+    CallNode(const VSOP::location &loc, const std::string &methodName,
+             const std::vector<std::shared_ptr<ExprNode>> &exprList,
+             std::shared_ptr<ExprNode> objExpr = nullptr)
+        : ExprNode(loc), m_methodName(methodName), m_exprList(exprList)
+    {
+        if (objExpr)
+            m_objExpr = objExpr;
+        else
+            m_objExpr = std::make_shared<SelfNode>(loc);
+    }
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
 private:
     std::string m_methodName;
@@ -459,11 +470,10 @@ private:
 class BlockNode : public ExprNode
 {
 public:
-    BlockNode(const int mode, location loc, std::vector<std::shared_ptr<ExprNode>> expressions)
-        : ExprNode(mode, loc), m_expressions(expressions) {}
+    BlockNode(const VSOP::location &loc, const std::vector<std::shared_ptr<ExprNode>> &expressions)
+        : ExprNode(loc), m_expressions(expressions) {}
 
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
 
 private:
     std::vector<std::shared_ptr<ExprNode>> m_expressions;
@@ -472,12 +482,12 @@ private:
 class LiteralNode : public ExprNode
 {
 public:
-    LiteralNode(const int mode, location loc, std::string value, std::string type) 
-        : ExprNode(mode, loc), m_value(value), m_type(type) {}
+    LiteralNode(const VSOP::location &loc, const std::string &value, const std::string &type)
+        : ExprNode(loc), m_value(value), m_type(type) {}
     std::string serialize() const override;
-    void accept(Visitor& visitor) override { visitor.visit(*this); }
-    std::string get_type() { return m_type; }
-    std::string get_value() { return m_value; }
+    std::string get_type() const { return m_type; }
+    std::string get_value() const { return m_value; }
+
 private:
     std::string m_value;
     std::string m_type;
@@ -486,8 +496,8 @@ private:
 class NewNode : public ExprNode
 {
 public:
-    NewNode(const int mode, location loc, std::string typeName)
-        : ExprNode(mode, loc), m_typeName(typeName) {}
+    NewNode(const VSOP::location &loc, const std::string &typeName)
+        : ExprNode(loc), m_typeName(typeName) {}
     std::string serialize() const override;
 
 private:

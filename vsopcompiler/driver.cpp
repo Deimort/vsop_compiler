@@ -77,7 +77,7 @@ static const std::map<Parser::token_type, string> type_to_string{
 static void print_token(Parser::symbol_type token)
 {
     position pos = token.location.begin;
-    Parser::token_type type = (Parser::token_type)token.type_get();
+    auto type = (Parser::token_type)token.type_get();
 
     cout << pos.line << ","
          << pos.column << ","
@@ -130,16 +130,14 @@ int Driver::lex()
     {
         Parser::symbol_type token = yylex();
 
-        if ((Parser::token_type)token.type_get() == Parser::token::YYEOF)
-            break;
-
-        if ((Parser::token_type)token.type_get() != Parser::token::YYerror)
-            print_token(token);
-        else
+        if ((Parser::token_type)token.type_get() == Parser::token::YYEOF || (Parser::token_type)token.type_get() == Parser::token::YYerror)
         {
-            error = 1;
+            if ((Parser::token_type)token.type_get() == Parser::token::YYerror)
+                error = 1;
             break;
         }
+        if ((Parser::token_type)token.type_get() != Parser::token::YYerror)
+            print_token(token);
     }
 
     scan_end();
@@ -151,12 +149,10 @@ int Driver::parse()
 {
     scan_begin();
 
-    parser = new Parser(*this, 0);
+    parser = make_shared<Parser>(*this);
 
     int res = parser->parse();
     scan_end();
-
-    delete parser;
 
     return res;
 }
@@ -165,12 +161,10 @@ int Driver::check()
 {
     scan_begin();
 
-    parser = new Parser(*this, 1);
+    parser = make_shared<Parser>(*this);
 
     int res = parser->parse();
     scan_end();
-
-    delete parser;
 
     return res;
 }

@@ -46,36 +46,35 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    VSOP::Driver driver = VSOP::Driver(source_file);
+    auto driver = VSOP::Driver(source_file);
 
     int res;
     switch (mode)
     {
-        case Mode::LEX:
-            res = driver.lex();
+    case Mode::LEX:
+        res = driver.lex();
 
-            return res;
+        return res;
 
-        case Mode::PARSE:
-            res = driver.parse();
+    case Mode::PARSE:
+        res = driver.parse();
 
-            if (res == 0)
-            {
-                driver.printAST();
-            }
+        if (res == 0)
+        {
+            driver.printAST();
+        }
 
-            return res;
-        case Mode::CHECK:
-            res = driver.check();
+        return res;
+    case Mode::CHECK:
+        res = driver.check();
 
-            if (res == 0)
-            {
-                res = driver.printAST();
-            }
+        if (res == 0)
+        {
+            driver.printAST();
+        }
 
-            return res;
+        return res;
     }
-
 
     return 0;
 }

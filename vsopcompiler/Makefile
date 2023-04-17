@@ -10,7 +10,8 @@ SRC				= main.cpp \
 				  driver.cpp \
 				  parser.cpp \
 				  lexer.cpp \
-				  AST/nodes.cpp
+				  AST/nodes.cpp \
+				  AST/type_checker.cpp
 
 OBJ	  			= $(SRC:.cpp=.o)
 
@@ -25,7 +26,10 @@ parser.o: driver.hpp parser.hpp AST/nodes.hpp
 
 lexer.o: driver.hpp parser.hpp
 
-AST/nodes.o: AST/nodes.hpp
+AST/nodes.o: AST/visitable.hpp AST/visitor.hpp AST/nodes.hpp
+
+AST/type_checker.o: AST/semantic_exception.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
+
 
 $(EXEC): $(OBJ)
 	$(CXX) -o $@ $(LDFLAGS) $(OBJ)

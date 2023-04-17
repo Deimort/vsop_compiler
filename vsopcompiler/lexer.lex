@@ -47,8 +47,6 @@ invalid_digit       {digit}+[a-zA-Z]
 invalid_int_literal {invalid_hex}|{invalid_digit}
 type_identifier     {uppercase_letter}({letter}|{digit}|"_")*
 object_identifier   {lowercase_letter}({letter}|{digit}|"_")*
-escape_sequence     [btnr"]|\\|"x"{hex_digit}{2}|"n"(" "|{tab})*
-escaped_char        \\{escape_sequence}
 regular_char        [^"\n\\]
 
 %x string_literal

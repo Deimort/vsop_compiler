@@ -33,14 +33,14 @@ namespace VSOP
          *
          * @param _source_file The file containing the source code.
          */
-        Driver(const std::string &_source_file) : source_file(_source_file) {}
+        explicit Driver(const std::string &_source_file) : source_file(_source_file) {}
 
         /**
          * @brief Get the source file.
          *
          * @return const std::string& The source file.
          */
-        const std::string &get_source_file() { return source_file; }
+        const std::string &get_source_file() const { return source_file; }
 
         /**
          * @brief Add a new integer variable.
@@ -48,7 +48,7 @@ namespace VSOP
          * @param name The name of the variable.
          * @param value The value of the variable.
          */
-        void add_variable(std::string name, int value) { variables[name] = value; }
+        void add_variable(const std::string &name, int value) { variables[name] = value; }
 
         /**
          * @brief Check if a variable exists.
@@ -58,7 +58,7 @@ namespace VSOP
          * @return true If the variable exists.
          * @return false If the variable does not exist.
          */
-        bool has_variable(std::string name) { return variables.count(name); }
+        bool has_variable(const std::string &name) const { return variables.count(name); }
 
         /**
          * @brief Get the interger value of a variable.
@@ -67,7 +67,7 @@ namespace VSOP
          *
          * @return int The value of the variable.
          */
-        int get_variable(std::string name) { return variables.at(name); }
+        int get_variable(const std::string &name) { return variables.at(name); }
 
         /**
          * @brief Run the lexer on the source file.
@@ -100,9 +100,9 @@ namespace VSOP
          */
         int result;
 
-        void setProgram(std::vector<std::shared_ptr<ClassNode>> classes)
+        void setProgram(const location &loc, std::vector<std::shared_ptr<ClassNode>> classes)
         {
-            this->program = std::shared_ptr<ProgramNode>(new ProgramNode(classes));
+            this->program = std::make_shared<ProgramNode>(loc, classes);
         }
 
         void printAST() const
@@ -119,7 +119,7 @@ namespace VSOP
         /**
          * @brief The parser.
          */
-        VSOP::Parser *parser;
+        std::shared_ptr<Parser> parser;
 
         /**
          * @brief Store the variables (names + values).
