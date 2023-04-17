@@ -23,6 +23,8 @@ template <class T>
 class SymbolTable
 {
 public:
+    void deactive();
+    void active();
     void enter_scope();
     void exit_scope();
     void insert(const std::string &name, const T &type);
@@ -31,4 +33,5 @@ public:
 
 private:
     std::stack<std::unordered_map<std::string, T>> m_scopes;
+    bool m_active = true;
 };

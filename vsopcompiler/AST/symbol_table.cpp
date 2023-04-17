@@ -1,6 +1,18 @@
 #include "symbol_table.hpp"
 
 template <class T>
+void SymbolTable<T>::deactive()
+{
+    m_active = false;
+}
+
+template <class T>
+void SymbolTable<T>::active() 
+{
+    m_active = true;
+}
+
+template <class T>
 void SymbolTable<T>::enter_scope()
 {
     m_scopes.push(std::unordered_map<std::string, T>());
@@ -21,6 +33,9 @@ void SymbolTable<T>::insert(const std::string &name, const T &type)
 template <class T>
 T SymbolTable<T>::lookup(const std::string &name) const
 {
+    if (!m_active)
+        throw SemanticException("No such identifier: " + name);
+    
     // search in current scope
     auto it = m_scopes.top().find(name);
     if (it != m_scopes.top().end())
@@ -45,6 +60,9 @@ T SymbolTable<T>::lookup(const std::string &name) const
 template <class T>
 bool SymbolTable<T>::exists(const std::string &name) const
 {
+    if (!m_active)
+        return false;
+
     // search in current scope
     auto it = m_scopes.top().find(name);
     if (it != m_scopes.top().end())
