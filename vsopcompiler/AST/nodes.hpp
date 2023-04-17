@@ -7,7 +7,9 @@
 
 #include "../location.hh"
 #include "visitor.hpp"
-#include "visitable.hpp"
+
+class Visitable;
+class Visitor;
 
 class BaseNode;
 class ProgramNode;
@@ -43,8 +45,12 @@ class IdentifierNode;
 class UnitNode;
 class LiteralNode;
 
-class Visitor;
-class Visitable;
+class Visitable
+{
+public:
+    virtual void accept(Visitor &visitor) = 0;
+    virtual ~Visitable() = default;
+};
 
 class Serializer
 {
@@ -98,8 +104,8 @@ public:
     using BaseNode::BaseNode;
     void addField(std::shared_ptr<FieldNode> field);
     void addMethod(std::shared_ptr<MethodNode> method);
-    std::vector<std::shared_ptr<FieldNode>> getFields() { return m_fields; }
-    std::vector<std::shared_ptr<MethodNode>> getMethods() { return m_methods; }
+    std::vector<std::shared_ptr<FieldNode>> getFields() const { return m_fields; }
+    std::vector<std::shared_ptr<MethodNode>> getMethods() const { return m_methods; }
     std::string serialize() const override;
 
 private:
@@ -129,7 +135,9 @@ class FieldNode : public BaseNode
 public:
     FieldNode(const VSOP::location &loc, const std::string &name, const std::string &type, const std::shared_ptr<ExprNode> &initExpr = nullptr)
         : BaseNode(loc), m_name(name), m_type(type), m_initExpr(initExpr) {}
-
+    std::string getName() const { return m_name; }
+    std::string getType() const { return m_type; }
+    std::shared_ptr<ExprNode> getInitExpr() const { return m_initExpr; }
     std::string serialize() const override;
 
 private:

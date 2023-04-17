@@ -40,7 +40,7 @@ class Visitor
 {
 public:
     virtual ~Visitor() = default;
-    virtual void visit(BaseNode &expr){/* No default behaviour here */}; //TODO is this still useful ?
+    virtual void visit(BaseNode &expr) = 0;
     virtual void visit(ProgramNode &expr) = 0;
     virtual void visit(ClassNode &expr) = 0;
     virtual void visit(ClassBodyNode &expr) = 0;

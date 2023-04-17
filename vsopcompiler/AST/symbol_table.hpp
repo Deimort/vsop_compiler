@@ -27,6 +27,7 @@ public:
     void exit_scope();
     void insert(const std::string &name, const T &type);
     T lookup(const std::string &name) const;
+    bool exists(const std::string &name) const;
 
 private:
     std::stack<std::unordered_map<std::string, T>> m_scopes;

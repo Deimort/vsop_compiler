@@ -7,31 +7,65 @@ void TypeCheckerVisitor::visit(BaseNode &expr) {}
 
 void TypeCheckerVisitor::visit(ProgramNode &expr)
 {
-    for (auto &classNode : expr.getClasses()) {
+    for (auto &classNode : expr.getClasses())
+    {
         classNode->accept(*this);
     }
 }
 
-void TypeCheckerVisitor::visit(ClassNode &expr) {
+void TypeCheckerVisitor::visit(ClassNode &expr)
+{
     checkCycle(expr.getName());
-    expr.getBody()->accept(*this);
-}
 
-void TypeCheckerVisitor::visit(ClassBodyNode &expr) {
-    // Visit all fields and methods in the class body
     m_vTable.enter_scope();
     m_fTable.enter_scope();
-    for (auto &node : expr.getFields()) {
-        node->accept(*this);
-    }
-    for (auto &node : expr.getMethods()) {
-        node->accept(*this);
-    }
+    expr.getBody()->accept(*this);
     m_vTable.exit_scope();
     m_fTable.exit_scope();
 }
 
-void TypeCheckerVisitor::visit(FieldNode &expr) {}
+void TypeCheckerVisitor::visit(ClassBodyNode &expr)
+{
+    // Visit all fields and methods in the class body
+    for (auto &node : expr.getFields())
+    {
+        node->accept(*this);
+    }
+    for (auto &node : expr.getMethods())
+    {
+        node->accept(*this);
+    }
+}
+
+void TypeCheckerVisitor::visit(FieldNode &expr)
+{
+    // Check if field type is valid
+    if (!isValidType(expr.getType()))
+    {
+        throw SemanticException("Invalid type for field " + expr.getName());
+    }
+
+    // Check if field name is already bound in current scope
+    if (m_vTable.exists(expr.getName()))
+    {
+        throw SemanticException("Field " + expr.getName() + " already defined in current scope");
+    }
+
+    // Check if field has initializer expression
+    if (expr.getInitExpr())
+    {
+        // Check if field initializer expression is of correct type
+        expr.getInitExpr()->accept(*this);
+        if (conformsTo(expr.getInitExpr()->get_ret_type(), expr.getType()))
+        {
+            throw SemanticException("Field initializer expression does not conform to declared type");
+        }
+    }
+
+    // Bind field name to type in symbol table
+    m_vTable.insert(expr.getName(), expr.getType());
+}
+
 void TypeCheckerVisitor::visit(MethodNode &expr) {}
 void TypeCheckerVisitor::visit(FormalNode &expr) {}
 
@@ -193,9 +227,21 @@ bool TypeCheckerVisitor::isPrimitive(const std::string &type) const
     return it != m_primitive_types.end();
 }
 
+bool TypeCheckerVisitor::isClass(const std::string &type) const
+{
+    for (const auto &classNode : m_ast.getClasses())
+    {
+        if (classNode->getName() == type)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string TypeCheckerVisitor::parentTypeOf(const std::string &type) const
 {
-    if (type == "Object") 
+    if (type == "Object")
     {
         return "";
     }
@@ -212,12 +258,12 @@ std::string TypeCheckerVisitor::parentTypeOf(const std::string &type) const
     throw SemanticException("Type : " + type + " is undefined");
 }
 
-std::string TypeCheckerVisitor::checkCycle(const std::string &type) const 
+std::string TypeCheckerVisitor::checkCycle(const std::string &type) const
 {
     std::string parent = parentTypeOf(type);
     while (!parent.empty())
     {
-        if (parent == type) 
+        if (parent == type)
         {
             throw SemanticException("Type : " + type + " is involeved in a cycle");
         }
@@ -275,4 +321,9 @@ bool TypeCheckerVisitor::conformsTo(const std::string &typeA, const std::string 
     }
 
     return false;
+}
+
+bool TypeCheckerVisitor::isValidType(const std::string &type) const
+{
+    return isPrimitive(type) || isClass(type);
 }

@@ -41,3 +41,27 @@ T SymbolTable<T>::lookup(const std::string &name) const
     // identifier not found in any scope, throw error
     throw SemanticException("No such identifier: " + name);
 }
+
+template <class T>
+bool SymbolTable<T>::exists(const std::string &name) const
+{
+    // search in current scope
+    auto it = m_scopes.top().find(name);
+    if (it != m_scopes.top().end())
+    {
+        return true;
+    }
+
+    // identifier not found in current scope, search in outer scopes
+    for (auto i = m_scopes.size() - 1; i > 0; --i)
+    {
+        it = m_scopes.at(i).find(name);
+        if (it != m_scopes.at(i).end())
+        {
+            return true;
+        }
+    }
+
+    // identifier not found in any scope
+    return false;
+}

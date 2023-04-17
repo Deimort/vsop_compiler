@@ -50,11 +50,13 @@ public:
 
 private:
     bool isPrimitive(const std::string &type) const;
+    bool isClass(const std::string &type) const;
     std::string parentTypeOf(const std::string &type) const;
     std::string checkCycle(const std::string &type) const;
     std::vector<std::string> ancestorsOf(const std::string &type) const;
     std::string commonAncestor(const std::string &typeA, const std::string &typeB) const;
     bool conformsTo(const std::string &typeA, const std::string &typeB) const;
+    bool isValidType(const std::string &type) const;
 
     std::vector<std::string> m_primitive_types = {"unit", "bool", "int32", "string"};
     const ProgramNode m_ast;
