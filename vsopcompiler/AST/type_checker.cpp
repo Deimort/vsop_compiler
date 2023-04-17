@@ -55,7 +55,11 @@ void TypeCheckerVisitor::visit(FieldNode &expr)
     if (expr.getInitExpr())
     {
         // Check if field initializer expression is of correct type
+        m_vTable.deactive();
+        m_fTable.deactive();
         expr.getInitExpr()->accept(*this);
+        m_vTable.active();
+        m_fTable.active();
         if (conformsTo(expr.getInitExpr()->get_ret_type(), expr.getType()))
         {
             throw SemanticException("Field initializer expression does not conform to declared type");
