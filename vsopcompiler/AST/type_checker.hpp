@@ -5,6 +5,7 @@
 #include "visitor.hpp"
 #include "nodes.hpp"
 #include "symbol_table.hpp"
+#include "semantic_exception.hpp"
 
 class Visitor;
 

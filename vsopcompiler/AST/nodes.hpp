@@ -108,6 +108,10 @@ public:
     MethodNode(const VSOP::location &loc, const std::string &name, const std::vector<std::shared_ptr<FormalNode>> &formals,
                const std::string &retType, std::shared_ptr<BlockNode> block)
         : BaseNode(loc), m_name(name), m_formals(formals), m_retType(retType), m_block(block) {}
+    std::vector<std::shared_ptr<FormalNode>> getFormals() const { return m_formals; }
+    std::string getName() const { return m_name; }
+    std::string getRetType() const { return m_retType; }
+    std::shared_ptr<BlockNode> getBlock() const { return m_block; }
 
     std::string serialize() const override;
 
@@ -123,6 +127,9 @@ class FormalNode : public BaseNode
 public:
     FormalNode(const VSOP::location &loc, const std::string &name, const std::string &type)
         : BaseNode(loc), m_name(name), m_type(type) {}
+
+    std::string getName() const { return m_name; }
+    std::string getType() const { return m_type; }
 
     std::string serialize() const override;
 
@@ -426,6 +433,11 @@ public:
         else
             m_objExpr = std::make_shared<SelfNode>(loc);
     }
+
+    std::string getMethodName() const { return m_methodName; }
+    std::vector<std::shared_ptr<ExprNode>> getExprList() const { return m_exprList; }
+    std::shared_ptr<ExprNode> getObjExpr() const { return m_objExpr; }
+
     std::string serialize() const override;
 
 private:
@@ -439,7 +451,8 @@ class BlockNode : public ExprNode
 public:
     BlockNode(const VSOP::location &loc, const std::vector<std::shared_ptr<ExprNode>> &expressions)
         : ExprNode(loc), m_expressions(expressions) {}
-
+        
+    std::vector<std::shared_ptr<ExprNode>> getExpressions() const { return m_expressions; }
     std::string serialize() const override;
 
 private:

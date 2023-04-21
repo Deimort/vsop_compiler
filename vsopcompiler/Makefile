@@ -28,7 +28,10 @@ lexer.o: driver.hpp parser.hpp
 
 AST/nodes.o: AST/visitor.hpp AST/nodes.hpp
 
-AST/type_checker.o: AST/semantic_exception.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
+AST/error_handler.o: AST/semantic_exception.hpp AST/visitor.hpp AST/nodes.hpp AST/error_handler.hpp
+
+AST/type_checker.o: AST/semantic_exception.hpp AST/symbol_table.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
+
 
 
 $(EXEC): $(OBJ)

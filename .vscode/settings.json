@@ -41,7 +41,14 @@
         "deque": "cpp",
         "unordered_map": "cpp",
         "functional": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "algorithm": "cpp",
+        "cerrno": "cpp",
+        "ios": "cpp",
+        "iterator": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "random": "cpp"
     },
     "makefile.launchConfigurations": [
         {

@@ -8,7 +8,7 @@ class ErrorHandler
 {
 public:
     virtual int handle(const ProgramNode &ast) = 0;
-    virtual std::shared_ptr<ErrorHandler> set_next(std::shared_ptr<ErrorHandler> next_handler) = 0;
+    virtual void set_next(std::shared_ptr<ErrorHandler> next_handler) = 0;
 };
 
 class GenericErrorHandler : public ErrorHandler
@@ -16,7 +16,7 @@ class GenericErrorHandler : public ErrorHandler
 public:
     GenericErrorHandler(std::shared_ptr<Visitor> checker) : m_next_handler(nullptr), m_checker(checker) {}
 
-    int handle(const ProgramNode &ast)
+    int handle(ProgramNode &ast)
     {
         try
         {
@@ -24,10 +24,12 @@ public:
         }
         catch (const SemanticException &e)
         {
-            std::cerr << e->message() << std::endl;
+            std::cerr << "An error occured" << std::endl;
             return 1;
         }
     }
+
+    void set_next(std::shared_ptr<ErrorHandler> next_handler) { m_next_handler = next_handler; }
 
 private:
     std::shared_ptr<ErrorHandler> m_next_handler;

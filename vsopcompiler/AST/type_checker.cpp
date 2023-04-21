@@ -1,5 +1,5 @@
 #include "type_checker.hpp"
-#include "semantic_exception.hpp"
+
 #include <algorithm>
 #include <iostream>
 
@@ -7,10 +7,43 @@ void TypeCheckerVisitor::visit(BaseNode &expr) {}
 
 void TypeCheckerVisitor::visit(ProgramNode &expr)
 {
+    m_fTable.enter_scope();
+
+    // Add all functions to symbol table
+    for (auto &classNode : expr.getClasses())
+    {
+        for (auto &methodNode : classNode->getBody()->getMethods())
+        {
+            std::vector<std::string> parameters_types;
+            for (auto &parameter : methodNode->getFormals())
+            {
+                parameters_types.push_back(parameter->getType());
+            }
+            FunctionType type(methodNode->getRetType(), parameters_types);
+            m_fTable.insert(classNode->getName() + "." + methodNode->getName(), type);
+        }
+    }
+
+    // Check if main function exists
+    if (!m_fTable.exists("Main.main"))
+    {
+        throw SemanticException("Main function does not exist");
+    }
+
+    // Check if main function has correct signature
+    auto main_type = m_fTable.lookup("Main.main");
+    if (main_type.return_type() != "int32" || main_type.parameter_types().size() != 0)
+    {
+        throw SemanticException("Main function has incorrect signature, should be () -> int32");
+    }
+
+    // Visit all classes in the program
     for (auto &classNode : expr.getClasses())
     {
         classNode->accept(*this);
     }
+    
+    m_fTable.exit_scope();
 }
 
 void TypeCheckerVisitor::visit(ClassNode &expr)
@@ -18,10 +51,8 @@ void TypeCheckerVisitor::visit(ClassNode &expr)
     checkCycle(expr.getName());
 
     m_vTable.enter_scope();
-    m_fTable.enter_scope();
     expr.getBody()->accept(*this);
     m_vTable.exit_scope();
-    m_fTable.exit_scope();
 }
 
 void TypeCheckerVisitor::visit(ClassBodyNode &expr)
@@ -45,11 +76,8 @@ void TypeCheckerVisitor::visit(FieldNode &expr)
         throw SemanticException("Invalid type for field " + expr.getName());
     }
 
-    // Check if field name is already bound in current scope
-    if (m_vTable.exists(expr.getName()))
-    {
-        throw SemanticException("Field " + expr.getName() + " already defined in current scope");
-    }
+    // Bind field name to type in symbol table
+    m_vTable.insert(expr.getName(), expr.getType());
 
     // Check if field has initializer expression
     if (expr.getInitExpr())
@@ -65,13 +93,47 @@ void TypeCheckerVisitor::visit(FieldNode &expr)
             throw SemanticException("Field initializer expression does not conform to declared type");
         }
     }
-
-    // Bind field name to type in symbol table
-    m_vTable.insert(expr.getName(), expr.getType());
 }
 
-void TypeCheckerVisitor::visit(MethodNode &expr) {}
-void TypeCheckerVisitor::visit(FormalNode &expr) {}
+void TypeCheckerVisitor::visit(MethodNode &expr)
+{
+    m_vTable.enter_scope();
+
+    // Check if method return type is valid
+    if (!isValidType(expr.getRetType()))
+    {
+        throw SemanticException("Invalid return type for method " + expr.getName());
+    }
+
+    // Add formal parameters to symbol table
+    for (auto &formal : expr.getFormals())
+    {
+        formal->accept(*this);
+    }
+
+    // Visit method body
+    expr.getBlock()->accept(*this);
+
+    // Check if method body conforms to declared return type
+    if (expr.getBlock()->get_ret_type() != expr.getRetType())
+    {
+        throw SemanticException("Method body does not conform to declared return type");
+    }
+
+    m_vTable.exit_scope();
+}
+
+void TypeCheckerVisitor::visit(FormalNode &expr)
+{
+    // Check if formal type is valid
+    if (!isValidType(expr.getType()))
+    {
+        throw SemanticException("Invalid type for formal " + expr.getName());
+    }
+
+    // Bind formal name to type in symbol table
+    m_vTable.insert(expr.getName(), expr.getType());
+}
 
 // ==================== Expressions ====================
 
@@ -194,8 +256,49 @@ void TypeCheckerVisitor::visit(IdentifierNode &expr)
 }
 
 void TypeCheckerVisitor::visit(UnitNode &expr) {}
-void TypeCheckerVisitor::visit(CallNode &expr) {}
-void TypeCheckerVisitor::visit(BlockNode &expr) {}
+
+void TypeCheckerVisitor::visit(CallNode &expr) 
+{
+    // Visit object expression
+    expr.getObjExpr()->accept(*this);
+
+    // Lookup for method on the object expression's type
+    auto objectType = expr.getObjExpr()->get_ret_type();
+    auto functionType = m_fTable.lookup(objectType + "." + expr.getMethodName());
+
+    // Check if the number of arguments match the number of parameters
+    if(functionType.parameter_types().size() != expr.getExprList().size())
+    {
+        throw SemanticException("The number of arguments does not match with the number of expected parameters");
+    }
+
+    // Check if argument types matches the expected types
+    for (int i = 0; i < functionType.parameter_types().size(); ++i)
+    {
+        expr.getExprList()[i]->accept(*this);
+
+        auto paramType = functionType.parameter_types()[i];
+        auto argType = expr.getExprList()[i]->get_ret_type();
+        if (paramType != argType)
+        {
+            throw SemanticException("Expected type : " + paramType + " got " + argType);
+        }
+    }
+
+    // Set return type of the call to the return type of the function
+    expr.set_ret_type(functionType.return_type());
+}
+
+void TypeCheckerVisitor::visit(BlockNode &expr) 
+{
+    // visit all expressions in block
+    for (auto &e : expr.getExpressions())
+    {
+        e->accept(*this);
+    }
+
+    expr.set_ret_type(expr.getExpressions().back()->get_ret_type());
+}
 
 void TypeCheckerVisitor::visit(LiteralNode &expr)
 {
@@ -206,7 +309,7 @@ void TypeCheckerVisitor::visit(LiteralNode &expr)
         {
             int value = std::stoi(expr.get_value());
             if (value < INT32_MIN || value > INT32_MAX)
-            {
+            { // TODO change to semantic exception
                 throw std::runtime_error("Expression : " + expr.get_value() + " is out of the bounds of int32");
             }
         }
