@@ -164,6 +164,11 @@ int Driver::check()
     parser = make_shared<Parser>(*this);
 
     int res = parser->parse();
+    auto type_checker = std::make_shared<TypeCheckerVisitor>(*this->program);
+    GenericErrorHandler handler(this->source_file, type_checker);
+    if (res != 0)
+        return res;
+    res = handler.handle(*this->program);
     scan_end();
 
     return res;

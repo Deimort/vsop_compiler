@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-#include "semantic_exception.hpp"
+#include "symbol_exception.hpp"
 
 class FunctionType
 {
@@ -51,16 +51,15 @@ public:
         // Check if identifier is already bound in current scope
         auto it = m_scopes.front().find(name);
         if (it != m_scopes.front().end())
-            throw SemanticException("Identifier " + name + " already defined in current scope");
-
+            throw SymbolException("Identifier " + name + " already defined in current scope");
         // Insert identifier in current scope
-        m_scopes.front()[name] = type;
+        m_scopes.front().insert(std::make_pair(name, type));
     }
 
     T lookup(const std::string &name) const
     {
         if (!m_active)
-            throw SemanticException("No such identifier: " + name);
+            throw SymbolException("No such identifier: " + name);
 
         // search in current scope
         auto it = m_scopes.front().find(name);
@@ -76,7 +75,7 @@ public:
         }
 
         // identifier not found in any scope, throw error
-        throw SemanticException("No such identifier: " + name);
+        throw SymbolException("No such identifier: " + name);
     }
 
     bool exists(const std::string &name) const

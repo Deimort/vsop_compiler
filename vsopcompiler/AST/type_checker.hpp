@@ -6,6 +6,7 @@
 #include "nodes.hpp"
 #include "symbol_table.hpp"
 #include "semantic_exception.hpp"
+#include "inheritance_exception.hpp"
 
 class Visitor;
 
@@ -53,14 +54,16 @@ private:
     bool isPrimitive(const std::string &type) const;
     bool isClass(const std::string &type) const;
     std::string parentTypeOf(const std::string &type) const;
-    std::string checkCycle(const std::string &type) const;
+    void checkCycle(const std::string &type) const;
     std::vector<std::string> ancestorsOf(const std::string &type) const;
     std::string commonAncestor(const std::string &typeA, const std::string &typeB) const;
     bool conformsTo(const std::string &typeA, const std::string &typeB) const;
     bool isValidType(const std::string &type) const;
+    FunctionType lookupMethod(const std::string &type, const std::string methodName) const;
 
     std::vector<std::string> m_primitive_types = {"unit", "bool", "int32", "string"};
     const ProgramNode m_ast;
     SymbolTable<std::string> m_vTable;
     SymbolTable<FunctionType> m_fTable;
+    std::string m_currentClass;
 };

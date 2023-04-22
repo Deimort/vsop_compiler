@@ -18,6 +18,8 @@
 
 #include "parser.hpp"
 #include "AST/nodes.hpp"
+#include "AST/error_handler.hpp"
+#include "AST/type_checker.hpp"
 
 // Give prototype of yylex() function, then declare it.
 #define YY_DECL VSOP::Parser::symbol_type yylex()

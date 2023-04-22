@@ -1,10 +1,15 @@
-#include "nodes.hpp"
 #include <iostream>
+#include "nodes.hpp"
 
 void Serializer::setType(const std::string &type)
 {
     m_hasType = true;
     m_buffer << type << "(";
+}
+
+void Serializer::setRetType(const std::string &type)
+{
+    m_ret_type = type;
 }
 
 void Serializer::addString(const std::string &str)
@@ -49,6 +54,10 @@ std::string Serializer::serialize()
     {
         m_buffer << ")";
     }
+    if (!m_ret_type.empty())
+    {
+        m_buffer << " : " << m_ret_type;
+    }
     std::string result = m_buffer.str();
     m_buffer.str("");
     return result;
@@ -60,7 +69,8 @@ std::string ProgramNode::serialize() const
     serializer.startList();
     for (auto &classNode : m_classes)
     {
-        serializer.addString(classNode->serialize());
+        if (classNode->getName() != "Object")
+            serializer.addString(classNode->serialize());
     }
     serializer.endList();
     return serializer.serialize();
@@ -141,6 +151,7 @@ std::string IfNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("If");
+    serializer.setRetType(get_ret_type());
     serializer.addString(m_condExpr->serialize());
     serializer.addString(m_thenExpr->serialize());
     if (m_elseExpr)
@@ -154,6 +165,7 @@ std::string WhileNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("While");
+    serializer.setRetType(get_ret_type());
     serializer.addString(m_condExpr->serialize());
     serializer.addString(m_bodyExpr->serialize());
     return serializer.serialize();
@@ -163,6 +175,7 @@ std::string LetNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("Let");
+    serializer.setRetType(get_ret_type());
     serializer.addString(m_name);
     serializer.addString(m_type);
     if (m_initExpr)
@@ -177,6 +190,7 @@ std::string AssignNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("Assign");
+    serializer.setRetType(get_ret_type());
     serializer.addString(m_name);
     serializer.addString(m_expr->serialize());
     return serializer.serialize();
@@ -186,6 +200,7 @@ std::string UnOpNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("UnOp");
+    serializer.setRetType(get_ret_type());
     completeOperator(serializer);
     serializer.addString(m_expr->serialize());
     return serializer.serialize();
@@ -195,6 +210,7 @@ std::string BinOpNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("BinOp");
+    serializer.setRetType(get_ret_type());
     completeOperator(serializer);
     serializer.addString(m_lExpr->serialize());
     serializer.addString(m_rExpr->serialize());
@@ -203,16 +219,22 @@ std::string BinOpNode::serialize() const
 
 std::string IdentifierNode::serialize() const
 {
+    Serializer serializer;
+    serializer.setRetType(get_ret_type());
     return m_name;
 }
 
 std::string SelfNode::serialize() const
 {
+    Serializer serializer;
+    serializer.setRetType(get_ret_type());
     return "self";
 }
 
 std::string UnitNode::serialize() const
 {
+    Serializer serializer;
+    serializer.setRetType(get_ret_type());
     return "()";
 }
 
@@ -228,6 +250,7 @@ std::string CallNode::serialize() const
         serializer.addString(expr->serialize());
     }
     serializer.endList();
+    serializer.setRetType(get_ret_type());
     return serializer.serialize();
 }
 
@@ -240,6 +263,7 @@ std::string BlockNode::serialize() const
         serializer.addString(expressionNode->serialize());
     }
     serializer.endList();
+    serializer.setRetType(get_ret_type());
     return serializer.serialize();
 }
 
@@ -247,6 +271,7 @@ std::string LiteralNode::serialize() const
 {
     Serializer serializer;
     serializer.addString(m_value);
+    serializer.setRetType(get_ret_type());
     return serializer.serialize();
 }
 
@@ -254,6 +279,7 @@ std::string NewNode::serialize() const
 {
     Serializer serializer;
     serializer.setType("New");
+    serializer.setRetType(get_ret_type());
     serializer.addString(m_typeName);
     return serializer.serialize();
 }

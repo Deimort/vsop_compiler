@@ -4,14 +4,14 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "make",
+            "command": "${command:makefile.buildCleanTarget}",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "problemMatcher": "$gcc",
             "options": {
-                "cwd": "${workspaceFolder}/vsopcompiler"
+                "cwd": "${command:makefile.getLaunchTargetDirectory}"
             }
         },
         {
@@ -27,5 +27,5 @@
             ],
             "problemMatcher": "$gcc",
         }
-    ]
+    ],
 }

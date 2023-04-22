@@ -1,6 +1,9 @@
 {
     "files.associations": {
+        "*.jsx": "javascriptreact",
+        "*.scm": "racket",
         "*.asm": "bsim",
+        "*.lex": "lex",
         "array": "cpp",
         "bit": "cpp",
         "*.tcc": "cpp",
@@ -48,15 +51,16 @@
         "iterator": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "atomic": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "ctime": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "iomanip": "cpp",
+        "cinttypes": "cpp"
     },
-    "makefile.launchConfigurations": [
-        {
-            "cwd": "/workspaces/cpl_project/vsopcompiler",
-            "binaryPath": "/workspaces/cpl_project/vsopcompiler/vsopc",
-            "binaryArgs": []
-        }
-    ],
     "makefile.configurations": [
         {
             "name": "VSOP",
@@ -69,4 +73,13 @@
     ],
     "makefile.compileCommandsPath": ".vscode/compile_commands.json",
     "sonarlint.pathToCompileCommands": "${workspaceFolder}/.vscode/compile_commands.json",
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/workspaces/cpl_project/vsopcompiler",
+            "binaryPath": "/workspaces/cpl_project/vsopcompiler/vsopc",
+            "binaryArgs": [],
+            "MIMode": "gdb",
+        }
+    ],
+    
 }

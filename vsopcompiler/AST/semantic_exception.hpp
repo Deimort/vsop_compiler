@@ -3,16 +3,8 @@
 #include <exception>
 #include <string>
 
-class SemanticException : public std::exception
+class SemanticException : public std::runtime_error
 {
 public:
-    explicit SemanticException(const std::string &message) : m_message(message) {}
-
-    const char *what() const noexcept override
-    {
-        return m_message.c_str();
-    }
-
-private:
-    std::string m_message;
+    SemanticException(const int row, const int col, const std::string &message) : std::runtime_error(std::to_string(row) + ":" + std::to_string(col) + ": semantic error: " + message) {}
 };

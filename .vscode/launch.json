@@ -5,48 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Lancer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/vsopcompiler/vsopc",
-            "args": [
-                "-p",
-                "${input:filePath}"
-            ],
-            "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Activer l'impression en mode Pretty pour gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Définir la version désassemblage sur Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
             "name": "C++ Launch (Makefile)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/vsopcompiler/vsopc", // Replace with the path to your executable
+            "program": "${command:makefile.getLaunchTargetPath}", // Replace with the path to your executable
             "args": [
-                "-p",
+                "${input:mode}",
                 "${input:filePath}"
             ], // Add any command-line arguments for the executable here
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/vsopcompiler",
+            "cwd": "${command:makefile.getLaunchTargetDirectory}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "gdb",// Replace with the name of your build task in the Makefile
+            "preLaunchTask": "build",
         }
     ],
     "inputs": [
+        {
+            "id": "mode",
+            "type": "pickString",
+            "description": "Select the mode",
+            "default": "-l",
+            "options": [
+                "-l",
+                "-p",
+                "-c",
+            ]
+        },
         {
             "id": "filePath",
             "type": "pickString",
@@ -54,8 +39,10 @@
             "default": "${workspaceFolder}/examples/my-class.txt",
             "options": [
                 "${workspaceFolder}/examples/my-class.txt",
-                "${workspaceFolder}/examples/correct.txt",
-                "${workspaceFolder}/parser/factorial.txt",
+                "${workspaceFolder}/examples/syntax/factorial.vsop",
+                "${workspaceFolder}/examples/syntax/list.vsop",
+                "${workspaceFolder}/examples/semantic/factorial.vsop",
+                "${workspaceFolder}/examples/semantic/list.vsop",
             ]
         }
     ]

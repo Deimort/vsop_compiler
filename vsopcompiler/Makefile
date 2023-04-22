@@ -30,7 +30,7 @@ AST/nodes.o: AST/visitor.hpp AST/nodes.hpp
 
 AST/error_handler.o: AST/semantic_exception.hpp AST/visitor.hpp AST/nodes.hpp AST/error_handler.hpp
 
-AST/type_checker.o: AST/semantic_exception.hpp AST/symbol_table.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
+AST/type_checker.o: AST/symbol_exception.hpp AST/inheritance_exception.hpp AST/semantic_exception.hpp AST/symbol_table.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
 
 
 
