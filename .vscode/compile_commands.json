@@ -1,1 +1,32 @@
-[]
+[
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o main.o main.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/main.cpp"
+    },
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o driver.o driver.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/driver.cpp"
+    },
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o parser.o parser.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/parser.cpp"
+    },
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o lexer.o lexer.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/lexer.cpp"
+    },
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o AST/nodes.o AST/nodes.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/AST/nodes.cpp"
+    },
+    {
+        "command": "g++ -Wall -Wextra -g -std=c++11 -O3   -c -o AST/type_checker.o AST/type_checker.cpp",
+        "directory": "/workspaces/cpl_project/vsopcompiler",
+        "file": "/workspaces/cpl_project/vsopcompiler/AST/type_checker.cpp"
+    }
+]

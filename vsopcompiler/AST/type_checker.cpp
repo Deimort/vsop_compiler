@@ -42,7 +42,7 @@ void TypeCheckerVisitor::visit(ProgramNode &expr)
     {
         classNode->accept(*this);
     }
-    
+
     m_fTable.exit_scope();
 }
 
@@ -257,7 +257,7 @@ void TypeCheckerVisitor::visit(IdentifierNode &expr)
 
 void TypeCheckerVisitor::visit(UnitNode &expr) {}
 
-void TypeCheckerVisitor::visit(CallNode &expr) 
+void TypeCheckerVisitor::visit(CallNode &expr)
 {
     // Visit object expression
     expr.getObjExpr()->accept(*this);
@@ -267,7 +267,7 @@ void TypeCheckerVisitor::visit(CallNode &expr)
     auto functionType = m_fTable.lookup(objectType + "." + expr.getMethodName());
 
     // Check if the number of arguments match the number of parameters
-    if(functionType.parameter_types().size() != expr.getExprList().size())
+    if (functionType.parameter_types().size() != expr.getExprList().size())
     {
         throw SemanticException("The number of arguments does not match with the number of expected parameters");
     }
@@ -289,7 +289,7 @@ void TypeCheckerVisitor::visit(CallNode &expr)
     expr.set_ret_type(functionType.return_type());
 }
 
-void TypeCheckerVisitor::visit(BlockNode &expr) 
+void TypeCheckerVisitor::visit(BlockNode &expr)
 {
     // visit all expressions in block
     for (auto &e : expr.getExpressions())
