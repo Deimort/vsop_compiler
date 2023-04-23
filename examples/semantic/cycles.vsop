@@ -1,0 +1,12 @@
+class G extends D { }
+class E extends A { }
+class J extends I { }
+class C extends B { }
+class I extends H { }
+class A { }
+class F extends B { }
+class H extends C { }
+class D extends I { }
+class K extends H { }
+class B extends D { }
+class Main { main() : int32 { 0 } }

@@ -26,14 +26,14 @@ template <class T>
 class SymbolTable
 {
 public:
-    void deactive()
+    void deactivateScope()
     {
-        m_active = false;
+        m_deactivatedScopeIndex = m_scopes.size() - 1;
     }
 
-    void active()
+    void activateScope()
     {
-        m_active = true;
+        m_deactivatedScopeIndex = -1;
     }
 
     void enter_scope()
@@ -58,18 +58,21 @@ public:
 
     T lookup(const std::string &name) const
     {
-        if (!m_active)
-            throw SymbolException("No such identifier: " + name);
-
         // search in current scope
-        auto it = m_scopes.front().find(name);
-        if (it != m_scopes.front().end())
-            return it->second;
+        if (m_deactivatedScopeIndex != m_scopes.size() - 1)
+        {
+            auto it = m_scopes.front().find(name);
+            if (it != m_scopes.front().end())
+                return it->second;
+        }
 
         // identifier not found in current scope, search in outer scopes
-        for (auto i = m_scopes.size() - 1; i > 0; --i)
+        for (auto i = 1; i < m_scopes.size(); ++i)
         {
-            it = m_scopes.at(i).find(name);
+            if (m_deactivatedScopeIndex == i)
+                continue;
+
+            auto it = m_scopes.at(i).find(name);
             if (it != m_scopes.at(i).end())
                 return it->second;
         }
@@ -80,20 +83,23 @@ public:
 
     bool exists(const std::string &name) const
     {
-        if (!m_active)
-            return false;
-
         // search in current scope
-        auto it = m_scopes.front().find(name);
-        if (it != m_scopes.front().end())
+        if (m_deactivatedScopeIndex != m_scopes.size() - 1)
         {
-            return true;
+            auto it = m_scopes.front().find(name);
+            if (it != m_scopes.front().end())
+            {
+                return true;
+            }
         }
 
         // identifier not found in current scope, search in outer scopes
         for (auto i = m_scopes.size() - 1; i > 0; --i)
         {
-            it = m_scopes.at(i).find(name);
+            if (m_deactivatedScopeIndex == i)
+                continue;
+
+            auto it = m_scopes.at(i).find(name);
             if (it != m_scopes.at(i).end())
             {
                 return true;
@@ -106,5 +112,5 @@ public:
 
 private:
     std::deque<std::unordered_map<std::string, T>> m_scopes;
-    bool m_active = true;
+    int m_deactivatedScopeIndex = -1;
 };

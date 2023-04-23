@@ -1,4 +1,5 @@
 class Main {
+    myField : int32 <- let x : int32 <- 42 in x;
     factorial(n : int32) : int32 {
         if n < 2 then 1
         else n * factorial(n - 1)

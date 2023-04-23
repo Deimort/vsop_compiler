@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <unordered_set>
 #include "type_checker.hpp"
 
 void TypeCheckerVisitor::visit(BaseNode &expr)
@@ -46,10 +47,14 @@ void TypeCheckerVisitor::visit(ProgramNode &expr)
     }
 
     // Visit all classes in the program
+    std::unordered_set<std::string> visited;
     for (auto const &classNode : expr.getClasses())
     {
+        if (visited.find(classNode->getName()) != visited.end())
+            throw SemanticException(classNode->getRow(), classNode->getCol(), "Class " + classNode->getName() + " is defined more than once");
         if (classNode->getName() != "Object")
             classNode->accept(*this);
+        visited.insert(classNode->getName());
     }
 
     m_fTable.exit_scope();
@@ -70,6 +75,29 @@ void TypeCheckerVisitor::visit(ClassNode &expr)
     m_currentClass = expr.getName();
 
     m_vTable.enter_scope();
+    // Add fields of parents class to symbol table
+    int i = 0;
+    for (auto const &ancestor : ancestorsOf(expr.getName()))
+    {
+        if (i == 0)
+        {
+            i++;
+            continue;
+        }
+
+        for (auto &ancestorClass : m_ast.getClasses())
+        {
+            if (ancestorClass->getName() == ancestor)
+            {
+                for (auto const &field : ancestorClass->getBody()->getFields())
+                {
+                    m_vTable.insert(field->getName(), field->getType());
+                }
+            }
+        }
+
+        i++;
+    }
     expr.getBody()->accept(*this);
     m_vTable.exit_scope();
 }
@@ -109,16 +137,17 @@ void TypeCheckerVisitor::visit(FieldNode &expr)
     if (expr.getInitExpr())
     {
         // Check if field initializer expression is of correct type
-        m_vTable.deactive();
-        m_fTable.deactive();
+        m_vTable.deactivateScope();
+        m_inFieldInitializer = true;
         expr.getInitExpr()->accept(*this);
-        m_vTable.active();
-        m_fTable.active();
+        m_inFieldInitializer = false;
+        m_vTable.activateScope();
+
         try
         {
             if (!conformsTo(expr.getInitExpr()->get_ret_type(), expr.getType()))
             {
-                throw SemanticException(expr.getRow(), expr.getCol(), "Field initializer expression does not conform to declared type");
+                throw SemanticException(expr.getRow(), expr.getCol(), "Field initializer expression type " + expr.getInitExpr()->get_ret_type() + " does not conform to declared type " + expr.getType());
             }
         }
         catch (const InheritanceException &e)
@@ -138,16 +167,62 @@ void TypeCheckerVisitor::visit(MethodNode &expr)
         throw SemanticException(expr.getRow(), expr.getCol(), "Invalid return type for method " + expr.getName());
     }
 
+    // Check if method overrides a parent method
+    auto ancestors = ancestorsOf(m_currentClass);
+    int i = 0;
+    for (auto const &ancestor : ancestors)
+    {
+        if (i == 0)
+        {
+            i++;
+            continue;
+        }
+        try
+        {
+            auto ancestorMethod = m_fTable.lookup(ancestor + "." + expr.getName());
+
+            // Check if overriden method has the same number of parameters
+            if (ancestorMethod.parameter_types().size() != expr.getFormals().size())
+            {
+                throw SemanticException(expr.getRow(), expr.getCol(), "Method " + expr.getName() + " overrides a parent method but has a different number of parameters");
+            }
+
+            // Check if overriden method has the same parameter types
+            for (int i = 0; i < ancestorMethod.parameter_types().size(); i++)
+            {
+                if (!conformsTo(expr.getFormals()[i]->getType(), ancestorMethod.parameter_types()[i]))
+                {
+                    throw SemanticException(expr.getRow(), expr.getCol(), "Method " + expr.getName() + " overrides a parent method but has a different parameter type");
+                }
+            }
+
+            // Check if overriden method has the same return type
+            if (!conformsTo(expr.getRetType(), ancestorMethod.return_type()))
+            {
+                throw SemanticException(expr.getRow(), expr.getCol(), "Method " + expr.getName() + " overrides a parent method but has a different return type");
+            }
+
+            break;
+        }
+        catch (const SymbolException &e)
+        {
+            continue;
+        }
+        i++;
+    }
+
     // Add formal parameters to symbol table
     for (auto const &formal : expr.getFormals())
     {
         formal->accept(*this);
     }
     // Visit method body
+    m_vTable.enter_scope();
     expr.getBlock()->accept(*this);
+    m_vTable.exit_scope();
 
     // Check if method body conforms to declared return type
-    if (expr.getBlock()->get_ret_type() != expr.getRetType())
+    if (!conformsTo(expr.getBlock()->get_ret_type(), expr.getRetType()))
     {
         throw SemanticException(expr.getRow(), expr.getCol(), "Method body does not conform to declared return type");
     }
@@ -179,7 +254,9 @@ void TypeCheckerVisitor::visit(IfNode &expr)
 {
     // Check condition is of bool type
     auto condExpr = expr.get_condExpr();
+    m_vTable.enter_scope();
     condExpr->accept(*this);
+    m_vTable.exit_scope();
     if (condExpr->get_ret_type() != "bool")
     {
         throw SemanticException(expr.getRow(), expr.getCol(), "Condition expression of if statement must be of boolean type.");
@@ -189,10 +266,14 @@ void TypeCheckerVisitor::visit(IfNode &expr)
     auto thenExpr = expr.get_thenExpr();
     auto elseExpr = expr.get_elseExpr();
 
+    m_vTable.enter_scope();
     thenExpr->accept(*this);
+    m_vTable.exit_scope();
     if (elseExpr)
     {
+        m_vTable.enter_scope();
         elseExpr->accept(*this);
+        m_vTable.exit_scope();
 
         auto thenType = thenExpr->get_ret_type();
         auto elseType = elseExpr->get_ret_type();
@@ -206,7 +287,6 @@ void TypeCheckerVisitor::visit(IfNode &expr)
             // Check common ancestor if both branches have class type
             try
             {
-
                 expr.set_ret_type(commonAncestor(thenType, elseType));
             }
             catch (const InheritanceException &e)
@@ -248,6 +328,7 @@ void TypeCheckerVisitor::visit(WhileNode &expr)
 
 void TypeCheckerVisitor::visit(LetNode &expr)
 {
+    m_vTable.enter_scope();
     if (expr.get_initExpr())
     {
         // Check if initializer expression is of correct type
@@ -272,7 +353,7 @@ void TypeCheckerVisitor::visit(LetNode &expr)
     {
         throw SemanticException(expr.getRow(), expr.getCol(), e.what());
     }
-    m_vTable.enter_scope();
+
     expr.get_scopedExpr()->accept(*this);
     m_vTable.exit_scope();
     expr.set_ret_type(expr.get_scopedExpr()->get_ret_type());
@@ -287,7 +368,7 @@ void TypeCheckerVisitor::visit(AssignNode &expr)
 
         std::string assign_expr_type = expr.get_assign_expr()->get_ret_type();
 
-        if (id_type != assign_expr_type)
+        if (!conformsTo(assign_expr_type, id_type))
             throw SemanticException(expr.getRow(), expr.getCol(), "Invalid value for assignment, got \"" + assign_expr_type + "\" instead of \"" + id_type + "\"");
         expr.set_ret_type(id_type);
     }
@@ -307,7 +388,7 @@ void TypeCheckerVisitor::visit(NotUnOpNode &expr)
 {
     expr.get_expr()->accept(*this);
     if (expr.get_expr()->get_ret_type() != "bool")
-        throw SemanticException(expr.getRow(), expr.getCol(), "Expression of not operator must be of bool type.");
+        throw SemanticException(expr.getRow(), expr.getCol(), "Expression of not operator must be of bool type. Got : " + expr.get_expr()->get_ret_type());
     expr.set_ret_type("bool");
 }
 
@@ -522,6 +603,10 @@ void TypeCheckerVisitor::visit(CallNode &expr)
     auto objectType = expr.getObjExpr()->get_ret_type();
     try
     {
+        if (m_inFieldInitializer && objectType == m_currentClass)
+        {
+            throw SemanticException(expr.getRow(), expr.getCol(), "Cannot call method " + expr.getMethodName() + " on self in field initializer.");
+        }
         auto functionType = lookupMethod(objectType, expr.getMethodName());
 
         // Check if the number of arguments match the number of parameters
@@ -537,7 +622,7 @@ void TypeCheckerVisitor::visit(CallNode &expr)
 
             auto paramType = functionType.parameter_types()[i];
             auto argType = expr.getExprList()[i]->get_ret_type();
-            if (paramType != argType)
+            if (!conformsTo(argType, paramType))
             {
                 throw SemanticException(expr.getRow(), expr.getCol(), "Expected type : " + paramType + " got " + argType);
             }
@@ -642,13 +727,17 @@ void TypeCheckerVisitor::checkCycle(const std::string &type) const
 {
 
     std::string parent = parentTypeOf(type);
+    std::unordered_set<std::string> types;
+    types.insert(type);
 
     while (!parent.empty())
     {
-        if (parent == type)
+        if (parent == type || types.find(parent) != types.end())
         {
-            throw InheritanceException("Type : " + type + " is involeved in a cycle");
+            throw InheritanceException("Type : " + type + " is involved in a cycle");
         }
+        types.insert(parent);
+
         parent = parentTypeOf(parent);
     }
 }
@@ -658,7 +747,7 @@ std::vector<std::string> TypeCheckerVisitor::ancestorsOf(const std::string &type
     std::vector<std::string> ancestors;
 
     // Find the parent classes of the given type
-    std::string parent = parentTypeOf(type);
+    std::string parent = type;
     while (!parent.empty())
     {
         ancestors.push_back(parent);
@@ -672,7 +761,7 @@ std::string TypeCheckerVisitor::commonAncestor(const std::string &typeA, const s
 {
     auto ancestorsA = ancestorsOf(typeA);
 
-    std::string parent = parentTypeOf(typeB);
+    std::string parent = typeB;
     while (!parent.empty())
     {
         if (std::find(ancestorsA.begin(), ancestorsA.end(), parent) != ancestorsA.end())
@@ -687,12 +776,12 @@ std::string TypeCheckerVisitor::commonAncestor(const std::string &typeA, const s
 
 bool TypeCheckerVisitor::conformsTo(const std::string &typeA, const std::string &typeB) const
 {
-    if (typeA == typeB)
+    if (isPrimitive(typeA))
     {
-        return true;
+        return typeA == typeB;
     }
 
-    std::string parent = parentTypeOf(typeA);
+    std::string parent = typeA;
     while (!parent.empty())
     {
         if (parent == typeB)
@@ -713,7 +802,6 @@ bool TypeCheckerVisitor::isValidType(const std::string &type) const
 FunctionType TypeCheckerVisitor::lookupMethod(const std::string &type, const std::string methodName) const
 {
     auto typesToSearchMethod = ancestorsOf(type);
-    typesToSearchMethod.push_back(type);
 
     for (const auto &typeToSearchMethod : typesToSearchMethod)
     {
@@ -723,6 +811,7 @@ FunctionType TypeCheckerVisitor::lookupMethod(const std::string &type, const std
         }
         catch (SymbolException &e)
         {
+            // Ignore exception and continue searching
         }
     }
 

@@ -66,4 +66,5 @@ private:
     SymbolTable<std::string> m_vTable;
     SymbolTable<FunctionType> m_fTable;
     std::string m_currentClass;
+    bool m_inFieldInitializer;
 };

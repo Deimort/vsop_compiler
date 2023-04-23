@@ -43,6 +43,13 @@
                 "${workspaceFolder}/examples/syntax/list.vsop",
                 "${workspaceFolder}/examples/semantic/factorial.vsop",
                 "${workspaceFolder}/examples/semantic/list.vsop",
+                "${workspaceFolder}/examples/semantic/MyClass.vsop",
+                "${workspaceFolder}/examples/semantic/parentClassVar.vsop",
+                "${workspaceFolder}/examples/semantic/override.vsop",
+                "${workspaceFolder}/examples/semantic/redefine.vsop",
+                "${workspaceFolder}/examples/semantic/cast.vsop",
+                "${workspaceFolder}/examples/semantic/if_else.vsop",
+                "${workspaceFolder}/examples/semantic/cycles.vsop",
             ]
         }
     ]

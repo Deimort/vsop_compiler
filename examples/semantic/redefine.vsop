@@ -1,0 +1,7 @@
+class Object {
+}
+class MyClass {
+}
+class Main {
+    main() : int32 { 0 }
+}

@@ -220,22 +220,25 @@ std::string BinOpNode::serialize() const
 std::string IdentifierNode::serialize() const
 {
     Serializer serializer;
+    serializer.addString(m_name);
     serializer.setRetType(get_ret_type());
-    return m_name;
+    return serializer.serialize();
 }
 
 std::string SelfNode::serialize() const
 {
     Serializer serializer;
+    serializer.addString("self");
     serializer.setRetType(get_ret_type());
-    return "self";
+    return serializer.serialize();
 }
 
 std::string UnitNode::serialize() const
 {
     Serializer serializer;
+    serializer.addString("()");
     serializer.setRetType(get_ret_type());
-    return "()";
+    return serializer.serialize();
 }
 
 std::string CallNode::serialize() const
