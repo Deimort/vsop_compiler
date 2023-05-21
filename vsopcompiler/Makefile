@@ -1,6 +1,10 @@
 CXX 			= g++
 
-CXXFLAGS 		= -Wall -Wextra -g -std=c++11 -O3
+LLVM_CONFIG 	= llvm-config-11
+
+CXXFLAGS 		= -Wall -Wextra -g -std=c++11 -O3 $(shell ${LLVM_CONFIG} --cxxflags) -fexceptions
+
+LDFLAGS 		= $(shell ${LLVM_CONFIG} --ldflags --system-libs --libs all)
 
 BISONFLAGS 		= -d
 
@@ -32,10 +36,11 @@ AST/error_handler.o: AST/semantic_exception.hpp AST/visitor.hpp AST/nodes.hpp AS
 
 AST/type_checker.o: AST/symbol_exception.hpp AST/inheritance_exception.hpp AST/semantic_exception.hpp AST/symbol_table.hpp AST/nodes.hpp AST/visitor.hpp AST/type_checker.hpp
 
+CG/code_generator.o: CG/scope_info.hpp CG/code_generator.hpp AST/nodes.hpp AST/visitor.hpp
 
 
 $(EXEC): $(OBJ)
-	$(CXX) -o $@ $(LDFLAGS) $(OBJ)
+	$(CXX) -o $@ $(OBJ) $(LDFLAGS) 
 
 parser.cpp: parser.y
 	bison $(BISONFLAGS) -o parser.cpp $^

@@ -1,8 +1,8 @@
 {
     "files.associations": {
+        "*.asm": "bsim",
         "*.jsx": "javascriptreact",
         "*.scm": "racket",
-        "*.asm": "bsim",
         "*.lex": "lex",
         "array": "cpp",
         "bit": "cpp",
@@ -59,7 +59,10 @@
         "memory_resource": "cpp",
         "numeric": "cpp",
         "iomanip": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "bitset": "cpp",
+        "cstring": "cpp",
+        "unordered_set": "cpp"
     },
     "makefile.configurations": [
         {
